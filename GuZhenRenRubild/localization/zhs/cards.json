@@ -1,0 +1,8 @@
+{
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_STRIKE.title": "模板打击",
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_STRIKE.description": "造成 {Damage:diff()} 点伤害。",
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_STRIKE.smartDescription": "造成 {Damage:diff()} 点伤害。",
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.title": "模板防御",
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.description": "获得 {Block:diff()} 点格挡。",
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.smartDescription": "获得 {Block:diff()} 点格挡。"
+}
