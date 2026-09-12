@@ -1,0 +1,5 @@
+{
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.name": "升炼",
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.description": "升炼蛊牌。本次共有 2 个升炼槽；六转以下消耗 1 槽，六转及以上消耗 2 槽。",
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "选择一张蛊牌升炼，并逐张确认升转预览。"
+}

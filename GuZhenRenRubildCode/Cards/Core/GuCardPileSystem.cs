@@ -1,7 +1,9 @@
+using System.Runtime.CompilerServices;
 using Godot;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.CardPiles;
 
 namespace GuZhenRenRubild.Cards;
@@ -19,15 +21,27 @@ public static class GuCardPileSystem
     private const string ActiveLocalId = "gu_active";
     private const string StorageLocalId = "gu_storage";
     private const string RecoveryLocalId = "gu_recovery";
-    private const string PileIconPath =
-        $"res://{Entry.ModId}/materials/GuPile.svg";
+    private const string StorageIconPath =
+        $"res://{Entry.ModId}/materials/GuStoragePile.svg";
+    private const string RecoveryIconPath =
+        $"res://{Entry.ModId}/materials/GuRecoveryPile.svg";
 
     // 注册过程使用互斥锁和初始化标记，避免多入口重复注册同名牌堆。
     private static readonly object SyncRoot = new();
+    private static readonly ConditionalWeakTable<Player, OpeningEntryState>
+        OpeningStates = new();
     private static bool _initialized;
+
+    private sealed class OpeningEntryState(CardModel[] cards)
+    {
+        internal CardModel[] Cards { get; } = cards;
+        internal Task? EntryTask { get; set; }
+        internal bool Completed { get; set; }
+    }
 
     // 注册完成后缓存 RitsuLib 返回的牌堆类型，后续所有移动操作都使用这些类型。
     public static PileType ActivePileType { get; private set; }
+    public static PileType GuHandPileType => ActivePileType;
     public static PileType StoragePileType { get; private set; }
     public static PileType RecoveryPileType { get; private set; }
 
@@ -66,7 +80,7 @@ public static class GuCardPileSystem
                 {
                     Scope = ModCardPileScope.CombatOnly,
                     Style = ModCardPileUiStyle.BottomLeft,
-                    IconPath = PileIconPath,
+                    IconPath = StorageIconPath,
                     Anchor = new ModCardPileAnchor(
                         ModCardPileAnchorKind.BottomLeftPrimary,
                         Vector2.Zero
@@ -82,10 +96,10 @@ public static class GuCardPileSystem
                 {
                     Scope = ModCardPileScope.CombatOnly,
                     Style = ModCardPileUiStyle.BottomLeft,
-                    IconPath = PileIconPath,
+                    IconPath = RecoveryIconPath,
                     Anchor = new ModCardPileAnchor(
                         ModCardPileAnchorKind.BottomLeftSecondary,
-                        new Vector2(-190f, 0f)
+                        new Vector2(-200f, 0f)
                     ),
                     CardShouldBeVisible = true,
                 }
@@ -101,8 +115,9 @@ public static class GuCardPileSystem
         // 因此卸载阶段不清空初始化标记，避免随后再次初始化时重复注册相同编号。
     }
 
-    // 战斗开始时重建蛊牌布局：先收集所有可能位置中的蛊牌，重置其战斗状态，统一放回储备区，再补满激活区。
-    internal static void InitializeCombat(Player owner)
+    // 战斗开始时只把真正的蛊牌收进储备区；伴生牌继续留在原生普通抽牌体系。
+    // 开场前 5 张蛊在原生首次 DrawInternal 完成后再逐张进入额外手牌。
+    internal static void InitializeGuCardsForCombat(Player owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
         EnsureInitialized();
@@ -120,14 +135,12 @@ public static class GuCardPileSystem
             recovery,
         ];
 
-        // 同一张卡可能在不同来源列表中被枚举到，Distinct 可防止重复移动或重复重置。
         CardModel[] guCards = allPiles
             .SelectMany(static pile => pile.Cards)
             .Where(static card => card is IGuCard)
             .Distinct()
             .ToArray();
 
-        // 批量移动时先静默修改牌堆内容，最后只对真正变化过的牌堆各发送一次变更通知。
         HashSet<CardPile> changed = [];
         foreach (CardModel card in guCards)
         {
@@ -135,22 +148,77 @@ public static class GuCardPileSystem
             MoveWithoutNotification(card, storage, changed);
         }
 
-        // 按储备区当前顺序取前若干张蛊牌进入激活区，最多不超过容量上限。
-        int activeCount = 0;
-        foreach (CardModel card in storage.Cards.ToArray())
-        {
-            if (activeCount >= ActiveCapacity)
-            {
-                break;
-            }
-
-            MoveWithoutNotification(card, active, changed);
-            activeCount++;
-        }
-
         foreach (CardPile pile in changed)
         {
             pile.InvokeContentsChanged();
+        }
+
+        CardModel[] openingCards = storage.Cards
+            .Where(static card => card is IGuCard)
+            .Take(ActiveCapacity)
+            .ToArray();
+        OpeningStates.Remove(owner);
+        OpeningStates.Add(owner, new OpeningEntryState(openingCards)
+        {
+            Completed = openingCards.Length == 0,
+        });
+    }
+
+    // 兼容旧调用名；新代码使用更明确的 InitializeGuCardsForCombat。
+    internal static void InitializeCombat(Player owner) =>
+        InitializeGuCardsForCombat(owner);
+
+    internal static Task? BeginOpeningGuEntry(Player owner, bool fromHandDraw)
+    {
+        if (!fromHandDraw || owner.PlayerCombatState?.TurnNumber != 1)
+        {
+            return null;
+        }
+
+        if (!OpeningStates.TryGetValue(owner, out OpeningEntryState? state) ||
+            state.Completed)
+        {
+            return state?.EntryTask;
+        }
+
+        state.EntryTask ??= RunOpeningEntryAsync(owner, state);
+        return state.EntryTask;
+    }
+
+    private static async Task RunOpeningEntryAsync(
+        Player owner,
+        OpeningEntryState state
+    )
+    {
+        try
+        {
+            CardPile storage = StoragePileType.GetPile(owner);
+            CardPile active = ActivePileType.GetPile(owner);
+            foreach (CardModel card in state.Cards)
+            {
+                if (active.Cards.Count >= ActiveCapacity ||
+                    card.Pile?.Type != StoragePileType)
+                {
+                    continue;
+                }
+
+                CardPileAddResult result = await CardPileCmd.Add(
+                    card,
+                    ActivePileType,
+                    CardPilePosition.Bottom,
+                    clonedBy: null,
+                    skipVisuals: false
+                );
+                if (!result.success)
+                {
+                    Entry.Logger.Warn($"Could not enter opening Gu card {card.Id}.");
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            state.Completed = true;
         }
     }
 

@@ -9,7 +9,7 @@ public sealed class GuZhenRenRubildCardPool : TypeListCardPoolModel
 {
     // 使用角色主题色创建卡池边框材质；静态缓存可避免每次读取属性时重复创建材质对象。
     private static readonly Material? PoolFrameTintMaterial =
-        MaterialUtils.CreateRgbShaderMaterial(0.42f, 0.65f, 0.72f);
+        MaterialUtils.CreateReplaceHueShaderMaterial(0.42f, 0.65f, 0.72f);
 
     // Title 和 EnergyColorName 是池子的稳定标识，不是玩家看到的角色名。
     // 自定义角色卡、遗物、药水池保持同一个 EnergyColorName，方便实验室和文本统一读取能量图标。

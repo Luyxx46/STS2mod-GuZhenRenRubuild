@@ -10,5 +10,8 @@
   "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_GU.smartDescription": "Rank [blue]{Rank}[/blue]. Deal {Damage:diff()} damage. After [blue]{MaxUses}[/blue] activation, recover for {RecoveryTurns} turns.",
   "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.title": "Jade Skin Gu",
   "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.description": "Rank [blue]{Rank}[/blue]. Gain {Block:diff()} Block. After [blue]{MaxUses}[/blue] activation, recover for {RecoveryTurns} turns.",
-  "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.smartDescription": "Rank [blue]{Rank}[/blue]. Gain {Block:diff()} Block. After [blue]{MaxUses}[/blue] activation, recover for {RecoveryTurns} turns."
+  "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.smartDescription": "Rank [blue]{Rank}[/blue]. Gain {Block:diff()} Block. After [blue]{MaxUses}[/blue] activation, recover for {RecoveryTurns} turns.",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_COMPANION.title": "Moonblade",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_COMPANION.description": "Deal {Damage:diff()} damage.",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_COMPANION.smartDescription": "Deal {Damage:diff()} damage."
 }

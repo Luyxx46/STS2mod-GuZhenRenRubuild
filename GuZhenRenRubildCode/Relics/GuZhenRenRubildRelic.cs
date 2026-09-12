@@ -6,6 +6,10 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using GuZhenRenRubild.Cards;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
+using GuZhenRenRubild.RestSite;
+using MegaCrit.Sts2.Core.Entities.RestSite;
+using MegaCrit.Sts2.Core.Rewards;
+using MegaCrit.Sts2.Core.Rooms;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
@@ -110,4 +114,40 @@ public sealed class GuZhenRenRubildRelic : ModRelicTemplate
             );
         }
     }
+    // 起始遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立“升炼”选项加入篝火。
+    public override bool TryModifyRestSiteOptions(
+        Player player,
+        ICollection<RestSiteOption> options
+    )
+    {
+        bool modified = base.TryModifyRestSiteOptions(player, options);
+        if (!ReferenceEquals(player, Owner) ||
+            options.Any(option => option.OptionId == GuRankUpRestSiteOption.OptionIdentifier))
+        {
+            return modified;
+        }
+
+        options.Add(new GuRankUpRestSiteOption(player));
+        return true;
+    }
+
+    // 奖励候选为 0 时不展示一个无法选择的空 CardReward。
+    public override bool TryModifyRewardsLate(
+        Player player,
+        List<Reward> rewards,
+        AbstractRoom? room
+    )
+    {
+        bool modified = base.TryModifyRewardsLate(player, rewards, room);
+        if (!ReferenceEquals(player, Owner))
+        {
+            return modified;
+        }
+
+        int removed = rewards.RemoveAll(reward =>
+            reward is CardReward cardReward && !cardReward.IsPopulated
+        );
+        return modified || removed > 0;
+    }
+
 }

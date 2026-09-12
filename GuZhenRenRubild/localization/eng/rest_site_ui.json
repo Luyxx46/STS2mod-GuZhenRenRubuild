@@ -1,0 +1,5 @@
+{
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.name": "Gu Refinement",
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.description": "Refine Gu cards. You have 2 refinement slots; Gu below Rank 6 cost 1 slot, Rank 6 or higher cost 2 slots.",
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "Choose a Gu to refine. Confirm each rank increase individually."
+}

@@ -66,12 +66,15 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     // 蛊牌不通过战斗中的普通随机生成机制产生，只由角色卡池、奖励等受控入口创建。
     public override bool CanBeGeneratedInCombat => false;
 
+    // 蛊牌不参与普通 Upgrade；转数只通过独立“升炼”规则提升。
+    public override int MaxUpgradeLevel => 0;
+
     // 卡牌费用位置显示元气图标，而不是角色的普通能量图标。
     public override string? CustomEnergyIconPath => YuanQiSystem.LargeIconPath;
 
     // 所有蛊牌归属本角色的专属卡池。
     public override CardPoolModel Pool =>
-        ModelDb.CardPool<GuZhenRenRubildCardPool>();
+        ModelDb.CardPool<GuZhenRenRubildGuCardPool>();
 
     // 是否可打出由蛊牌运行时统一判断：必须位于激活区、有剩余使用次数、处于战斗中且元气足够。
     protected override bool IsPlayable => GuCardRuntime.CanActivate(this);

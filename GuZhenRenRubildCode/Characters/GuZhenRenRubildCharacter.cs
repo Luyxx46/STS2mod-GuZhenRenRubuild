@@ -9,7 +9,7 @@ namespace GuZhenRenRubild.Characters;
 
 // 自动注册角色模型，并通过泛型参数把角色与专属卡池、遗物池和药水池绑定在一起。
 [RegisterCharacter]
-public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRubildCardPool, GuZhenRenRubildRelicPool, GuZhenRenRubildPotionPool>
+public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRubildGuCardPool, GuZhenRenRubildRelicPool, GuZhenRenRubildPotionPool>
 {
     // 角色统一主题色，卡池、药水池、遗物池和地图绘制都会复用该颜色。
     public static readonly Color ThemeColor = new(0.42f, 0.65f, 0.72f);

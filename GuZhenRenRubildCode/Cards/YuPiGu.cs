@@ -5,11 +5,12 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Scaffolding.Content;
 
 namespace GuZhenRenRubild.Cards;
 
 // 将“玉皮蛊”注册进角色卡池，并作为 1 张初始蛊牌加入角色初始牌组。
-[RegisterCard(typeof(GuZhenRenRubildCardPool))]
+[RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 1)]
 public sealed class YuPiGu : AbstractGuCard
 {

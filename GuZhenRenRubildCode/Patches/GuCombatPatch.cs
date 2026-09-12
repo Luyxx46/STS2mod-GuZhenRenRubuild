@@ -1,24 +1,26 @@
 using System.Reflection;
 using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Companions;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 
 namespace GuZhenRenRubild.Patches;
 
 /// <summary>
-/// 把游戏原生战斗构建流程接入蛊牌生命周期：战斗状态建立后刷新蛊牌品阶派生值，正式开战后初始化专用牌堆。
+/// 战斗边界适配器：战前修复永久配对，战斗网络编号完成后建立映射并收纳蛊牌，
+/// 原生首次抽牌完成后再播放开场蛊手牌入场。
 /// </summary>
 internal static class GuCombatPatch
 {
-    // 每组补丁使用独立 Harmony 编号，卸载时可以精确移除本组补丁。
     private const string HarmonyId = Entry.ModId + ".GuCombat";
     private static bool _initialized;
 
-    // 查找目标方法并安装后置补丁；若游戏版本改变导致方法不存在，则立即抛出异常以暴露兼容性问题。
     internal static void Initialize()
     {
         if (_initialized)
@@ -30,46 +32,56 @@ internal static class GuCombatPatch
             typeof(Player),
             nameof(Player.PopulateCombatState),
             [typeof(Rng), typeof(CombatState)]
-        ) ?? throw new MissingMethodException(
-            typeof(Player).FullName,
-            nameof(Player.PopulateCombatState)
-        );
+        ) ?? throw new MissingMethodException(typeof(Player).FullName, nameof(Player.PopulateCombatState));
         MethodInfo startCombat = AccessTools.DeclaredMethod(
             typeof(NetCombatCardDb),
             nameof(NetCombatCardDb.StartCombat),
             [typeof(IReadOnlyList<Player>)]
-        ) ?? throw new MissingMethodException(
-            typeof(NetCombatCardDb).FullName,
-            nameof(NetCombatCardDb.StartCombat)
-        );
+        ) ?? throw new MissingMethodException(typeof(NetCombatCardDb).FullName, nameof(NetCombatCardDb.StartCombat));
+        MethodInfo drawInternal = AccessTools.DeclaredMethod(
+            typeof(CardPileCmd),
+            "DrawInternal",
+            [
+                typeof(PlayerChoiceContext),
+                typeof(decimal),
+                typeof(Player),
+                typeof(bool),
+            ]
+        ) ?? throw new MissingMethodException(typeof(CardPileCmd).FullName, "DrawInternal");
 
-        // PopulateCombatState 用于角色战斗状态构建；StartCombat 表示所有玩家即将进入正式战斗。
+        if (drawInternal.ReturnType != typeof(Task<IEnumerable<CardModel>>))
+        {
+            throw new MissingMethodException("CardPileCmd.DrawInternal has an unexpected return type.");
+        }
+
         Harmony harmony = new(HarmonyId);
         harmony.Patch(
             populateCombatState,
-            postfix: new HarmonyMethod(
-                typeof(GuCombatPatch),
-                nameof(PopulateCombatStatePostfix)
-            )
+            prefix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePrefix)),
+            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePostfix))
         );
         harmony.Patch(
             startCombat,
-            postfix: new HarmonyMethod(
-                typeof(GuCombatPatch),
-                nameof(StartCombatPostfix)
-            )
+            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(StartCombatPostfix))
+        );
+        harmony.Patch(
+            drawInternal,
+            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(DrawInternalPostfix))
         );
         _initialized = true;
     }
 
-    // 移除当前 Harmony 编号安装的全部补丁，并允许后续重新初始化。
     internal static void Uninitialize()
     {
         new Harmony(HarmonyId).UnpatchAll(HarmonyId);
         _initialized = false;
     }
 
-    // 原生战斗状态生成后，刷新抽牌堆、弃牌堆和手牌中的蛊牌派生数值。
+    private static void PopulateCombatStatePrefix(Player __instance)
+    {
+        CompanionRelationshipService.ReconcileDeck(__instance);
+    }
+
     private static void PopulateCombatStatePostfix(Player __instance)
     {
         foreach (AbstractGuCard card in EnumerateNativeCombatPiles(__instance))
@@ -78,19 +90,46 @@ internal static class GuCombatPatch
         }
     }
 
-    // 正式开战后为每名玩家建立蛊牌储备区、激活区和恢复区的初始布局。
     private static void StartCombatPostfix(IReadOnlyList<Player> players)
     {
         foreach (Player player in players)
         {
-            GuCardPileSystem.InitializeCombat(player);
+            CompanionNetworkMap.RebuildCombatMap(player);
+            GuCardPileSystem.InitializeGuCardsForCombat(player);
         }
     }
 
-    // 这里只枚举原生三大牌堆，因为专用蛊牌堆会在后续 StartCombat 阶段统一初始化。
-    private static IEnumerable<AbstractGuCard> EnumerateNativeCombatPiles(
-        Player player
+    private static void DrawInternalPostfix(
+        Player player,
+        bool fromHandDraw,
+        ref Task<IEnumerable<CardModel>> __result
     )
+    {
+        if (!fromHandDraw || player.PlayerCombatState?.TurnNumber != 1)
+        {
+            return;
+        }
+
+        __result = AwaitDrawThenGuEntryAsync(__result, player, fromHandDraw);
+    }
+
+    private static async Task<IEnumerable<CardModel>> AwaitDrawThenGuEntryAsync(
+        Task<IEnumerable<CardModel>> drawTask,
+        Player player,
+        bool fromHandDraw
+    )
+    {
+        IEnumerable<CardModel> drawnCards = await drawTask;
+        Task? entryTask = GuCardPileSystem.BeginOpeningGuEntry(player, fromHandDraw);
+        if (entryTask != null)
+        {
+            await entryTask;
+        }
+
+        return drawnCards;
+    }
+
+    private static IEnumerable<AbstractGuCard> EnumerateNativeCombatPiles(Player player)
     {
         return PileType.Draw.GetPile(player).Cards
             .Concat(PileType.Discard.GetPile(player).Cards)

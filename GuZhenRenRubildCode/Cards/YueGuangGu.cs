@@ -1,18 +1,22 @@
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Companions;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
+using STS2RitsuLib.Scaffolding.Content;
 
 namespace GuZhenRenRubild.Cards;
 
 // 将“月光蛊”注册进角色卡池，并作为 2 张初始蛊牌加入角色初始牌组。
-[RegisterCard(typeof(GuZhenRenRubildCardPool))]
+[RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 2)]
-public sealed class YueGuangGu : AbstractGuCard
+public sealed class YueGuangGu : AbstractGuCard, ICompanionSourceGuCard
 {
+    public CompanionDefinition Companion => new(typeof(YueGuangCompanion));
+
     // 声明伤害动态变量；最终基础值由品阶公式在 RefreshValues 中覆盖。
     protected override IEnumerable<DynamicVar> CanonicalVars =>
         [new DamageVar(6m, ValueProp.Move)];
