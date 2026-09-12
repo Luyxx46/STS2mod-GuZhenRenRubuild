@@ -1,5 +1,5 @@
 using GuZhenRenRubild.Cards.Core;
-using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Cards.Companions;
 using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;

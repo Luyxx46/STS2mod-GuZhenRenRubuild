@@ -3,7 +3,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace GuZhenRenRubild.Cards.Core.Companions;
+namespace GuZhenRenRubild.Cards.Companions;
 
 /// <summary>
 /// 伴生牌仍是完整的普通卡牌：使用普通能量、普通抽牌体系和原生升级/附魔；

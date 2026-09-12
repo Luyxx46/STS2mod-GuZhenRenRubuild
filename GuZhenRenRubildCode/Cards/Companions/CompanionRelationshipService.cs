@@ -2,7 +2,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Core.Companions;
+namespace GuZhenRenRubild.Cards.Companions;
 
 /// <summary>
 /// 永久伴生关系的唯一业务入口。Harmony 只负责在生命周期边界调用这里，
