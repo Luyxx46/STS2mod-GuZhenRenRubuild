@@ -1,0 +1,201 @@
+using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Combat;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Random;
+using STS2RitsuLib.Combat.SecondaryResources;
+using STS2RitsuLib.Scaffolding.Content;
+using STS2RitsuLib.Utils;
+
+namespace GuZhenRenRubild.Cards;
+
+/// <summary>
+/// 蛊牌的统一抽象基类，负责保存蛊牌品阶，并定义蛊牌从专用激活区使用时需要遵守的基础规则。
+/// 具体蛊牌只需要提供自身效果与数值成长，品阶持久化、元气消耗、使用次数和恢复流程由公共系统统一处理。
+/// </summary>
+public abstract class AbstractGuCard : ModCardTemplate, IGuCard
+{
+    // 所有蛊牌允许的最低品阶。品阶读取和写入都会被限制在合法区间内。
+    public const int MinimumGuRank = 1;
+
+    // 保存每张卡牌的实际品阶，使其能够随存档和联机状态一起恢复。
+    private static readonly SavedAttachedState<CardModel, int> RankState = new(
+        Entry.ModId + ".gu_rank",
+        static () => MinimumGuRank
+    );
+
+    // 单独记录“是否已经完成初始品阶抽取”，避免奖励界面重复刷新时再次随机。
+    private static readonly SavedAttachedState<CardModel, bool> RankAssignedState = new(
+        Entry.ModId + ".gu_rank_assigned",
+        static () => false
+    );
+
+    // CardModel 在创建可变副本时会复制普通字段，因此本地字段用于保证克隆后的即时状态正确。
+    // SavedAttachedState 负责存档与联机同步；两套状态同时保留，可以覆盖“对象克隆”和“持久化恢复”两条数据路径。
+    private int _guRank = MinimumGuRank;
+    private bool _rankAssigned;
+
+    // 当前蛊牌品阶。优先读取持久化状态，并始终限制在最低品阶与该蛊牌最大品阶之间。
+    public int GuRank
+    {
+        get
+        {
+            int rank = RankAssignedState[this] ? RankState[this] : _guRank;
+            _guRank = Math.Clamp(rank, MinimumGuRank, MaxGuRank);
+            return _guRank;
+        }
+        private set
+        {
+            _guRank = Math.Clamp(value, MinimumGuRank, MaxGuRank);
+            RankState[this] = _guRank;
+        }
+    }
+
+    // 以下属性定义一张蛊牌的公共规则；具体蛊牌可按需覆盖。
+    // MaxGuRank：最高品阶；MaxUses：一次激活周期内可使用次数；YuanQiCost：每次打出需要的元气；RecoveryDelayTurns：耗尽后恢复所需回合数。
+    public virtual int MaxGuRank => 9;
+    public virtual int MaxUses => 1;
+    public virtual int YuanQiCost => 1;
+    public virtual int RecoveryDelayTurns => 2;
+
+    // 仅当本地字段和持久化字段都未标记时，才允许为奖励中的新蛊牌分配初始品阶。
+    internal bool NeedsInitialRankAssignment =>
+        !(_rankAssigned || RankAssignedState[this]);
+
+    // 蛊牌不通过战斗中的普通随机生成机制产生，只由角色卡池、奖励等受控入口创建。
+    public override bool CanBeGeneratedInCombat => false;
+
+    // 卡牌费用位置显示元气图标，而不是角色的普通能量图标。
+    public override string? CustomEnergyIconPath => YuanQiSystem.LargeIconPath;
+
+    // 所有蛊牌归属本角色的专属卡池。
+    public override CardPoolModel Pool =>
+        ModelDb.CardPool<GuZhenRenRubildCardPool>();
+
+    // 是否可打出由蛊牌运行时统一判断：必须位于激活区、有剩余使用次数、处于战斗中且元气足够。
+    protected override bool IsPlayable => GuCardRuntime.CanActivate(this);
+
+    // 构造时把元气费用写入 RitsuLib 的副资源费用表，使原生卡牌流程能够自动检查并扣除元气。
+    protected AbstractGuCard(
+        CardType type,
+        CardRarity rarity,
+        TargetType target,
+        bool showInCardLibrary = true
+    ) : base(0, type, rarity, target, showInCardLibrary)
+    {
+        this.SecondaryCosts().Set(YuanQiSystem.ResourceId, YuanQiCost);
+    }
+
+    // 在原生可打出判定之外，再校验蛊牌是否还有可用次数；自动打出同样遵守此限制。
+    public override bool ShouldPlay(CardModel card, AutoPlayType autoPlayType)
+    {
+        return base.ShouldPlay(card, autoPlayType) &&
+            (!ReferenceEquals(card, this) || GuCardRuntime.CanUse(this));
+    }
+
+    // 蛊牌打出后的目标牌堆由运行时状态决定：仍有次数则回激活区，次数耗尽则进入恢复区。
+    public override CardLocation ModifyCardPlayResultLocation(
+        CardModel card,
+        bool isAutoPlay,
+        ResourceInfo resources,
+        CardLocation location
+    )
+    {
+        if (ReferenceEquals(card, this))
+        {
+            location.pileType = GuCardRuntime.GetResultPile(this);
+        }
+
+        return location;
+    }
+
+    // 将品阶、最大次数、剩余次数和恢复回合数注入本地化参数，供卡牌描述中的占位符直接使用。
+    protected override void AddExtraArgsToDescription(LocString description)
+    {
+        base.AddExtraArgsToDescription(description);
+        description.Add("Rank", GuRank);
+        description.Add("MaxUses", MaxUses);
+        description.Add("RemainingUses", GuCardRuntime.GetRemainingUses(this));
+        description.Add("RecoveryTurns", RecoveryDelayTurns);
+    }
+
+    // 为尚未初始化的蛊牌抽取初始品阶。均值会随楼层缓慢提高，但最高只提升到 3；标准差固定为 2。
+    // 采样区间向整数边界各扩展 0.5，再四舍五入为整数，可让边缘品阶也获得自然的概率质量。
+    internal bool TryAssignInitialRank(Rng rng, int totalFloor)
+    {
+        if (!NeedsInitialRankAssignment)
+        {
+            return false;
+        }
+
+        const double minimumMean = 1.0;
+        const double maximumMean = 3.0;
+        const double meanPerFloor = 0.05;
+        const double standardDeviation = 2.0;
+
+        double mean = Math.Clamp(
+            minimumMean + Math.Max(0, totalFloor - 1) * meanPerFloor,
+            minimumMean,
+            Math.Min(maximumMean, MaxGuRank)
+        );
+        double sampleMin = MinimumGuRank - 0.5;
+        double sampleMax = MaxGuRank + 0.5;
+        double sampleRange = sampleMax - sampleMin;
+        double sampled = rng.NextGaussianDouble(
+            (mean - sampleMin) / sampleRange,
+            standardDeviation / sampleRange,
+            sampleMin,
+            sampleMax
+        );
+
+        SetGuRank((int)Math.Round(sampled));
+        return true;
+    }
+
+    // 将品阶提升一级；达到最大品阶后不再提升，并通过返回值告诉调用方是否真的发生了变化。
+    internal bool TryIncreaseGuRank()
+    {
+        if (GuRank >= MaxGuRank)
+        {
+            return false;
+        }
+
+        SetGuRank(GuRank + 1);
+        return true;
+    }
+
+    // 在战斗构建或反序列化后重新同步品阶相关状态，并让子类重新计算依赖品阶的动态数值。
+    internal void RefreshRankDerivedState()
+    {
+        _guRank = GuRank;
+        _rankAssigned = RankAssignedState[this] || _rankAssigned;
+        if (_rankAssigned && !RankAssignedState[this])
+        {
+            RankState[this] = _guRank;
+            RankAssignedState[this] = true;
+        }
+        OnGuRankChanged();
+    }
+
+    // 子类可覆盖此钩子，在品阶改变或状态恢复后刷新伤害、格挡等派生数值。
+    protected virtual void OnGuRankChanged()
+    {
+    }
+
+    // 存档反序列化完成后立即恢复本地缓存，避免显示值与持久化品阶不一致。
+    protected override void AfterDeserialized()
+    {
+        base.AfterDeserialized();
+        RefreshRankDerivedState();
+    }
+
+    // 统一的品阶写入口：写入合法值、标记已初始化，并触发子类的数值刷新钩子。
+    private void SetGuRank(int rank)
+    {
+        GuRank = rank;
+        _rankAssigned = true;
+        RankAssignedState[this] = true;
+        OnGuRankChanged();
+    }
+}

@@ -4,5 +4,11 @@
   "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_STRIKE.smartDescription": "造成 {Damage:diff()} 点伤害。",
   "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.title": "模板防御",
   "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.description": "获得 {Block:diff()} 点格挡。",
-  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.smartDescription": "获得 {Block:diff()} 点格挡。"
+  "GU_ZHEN_REN_RUBILD_CARD_GU_ZHEN_REN_RUBILD_DEFEND.smartDescription": "获得 {Block:diff()} 点格挡。",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_GU.title": "月光蛊",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_GU.description": "[blue]{Rank}[/blue]转。造成 {Damage:diff()} 点伤害。催动 [blue]{MaxUses}[/blue] 次后进入冷却，{RecoveryTurns} 回合后恢复。",
+  "GU_ZHEN_REN_RUBILD_CARD_YUE_GUANG_GU.smartDescription": "[blue]{Rank}[/blue]转。造成 {Damage:diff()} 点伤害。催动 [blue]{MaxUses}[/blue] 次后进入冷却，{RecoveryTurns} 回合后恢复。",
+  "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.title": "玉皮蛊",
+  "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.description": "[blue]{Rank}[/blue]转。获得 {Block:diff()} 点格挡。催动 [blue]{MaxUses}[/blue] 次后进入冷却，{RecoveryTurns} 回合后恢复。",
+  "GU_ZHEN_REN_RUBILD_CARD_YU_PI_GU.smartDescription": "[blue]{Rank}[/blue]转。获得 {Block:diff()} 点格挡。催动 [blue]{MaxUses}[/blue] 次后进入冷却，{RecoveryTurns} 回合后恢复。"
 }

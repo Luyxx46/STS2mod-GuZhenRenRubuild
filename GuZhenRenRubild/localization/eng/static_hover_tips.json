@@ -1,0 +1,11 @@
+{
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.title": "Active Gu",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.description": "Holds up to 5 Gu ready to activate. Empty slots are filled from Gu Waiting in order.",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.empty": "No active Gu.",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.title": "Gu Waiting",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.description": "Holds recovered Gu waiting for an active slot.",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.empty": "No Gu are waiting.",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.title": "Gu Recovery",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.description": "Gu with no uses left recover here, then join the waiting queue.",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "No Gu are recovering."
+}

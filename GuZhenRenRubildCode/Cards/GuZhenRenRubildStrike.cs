@@ -11,6 +11,7 @@ namespace GuZhenRenRubild.Cards;
 
 // RegisterCard 会把这张牌交给 RitsuLib 自动注册。
 // RegisterCharacterStarterCard 会把它追加进 GuZhenRenRubildCharacter 的初始卡组。
+// 这是一张模板用的普通攻击牌，主要展示角色卡池注册、动态伤害值和升级写法。
 [RegisterCard(typeof(GuZhenRenRubildCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 4)]
 public sealed class GuZhenRenRubildStrike : ModCardTemplate
@@ -41,6 +42,7 @@ public sealed class GuZhenRenRubildStrike : ModCardTemplate
 
     protected override HashSet<CardTag> CanonicalTags => new() { CardTag.Strike };
 
+    // 构造函数只负责声明费用、类型、稀有度和目标；伤害数值由 CanonicalVars 管理。
     public GuZhenRenRubildStrike() : base(BaseEnergyCost, CardKind, CardRarityValue, CardTarget, ShowInCardLibrary)
     {
     }

@@ -1,0 +1,11 @@
+{
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.title": "蛊手牌",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.description": "最多容纳5张可催动蛊牌。出现空位时按顺序从蛊待命堆补入。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.empty": "蛊手牌为空。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.title": "蛊待命堆",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.description": "存放已经可用、正在等待蛊手牌空位的蛊牌。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.empty": "蛊待命堆为空。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.title": "蛊冷却堆",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.description": "催动次数耗尽的蛊在这里冷却；恢复完成后进入待命队列。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "蛊冷却堆为空。"
+}

@@ -3,16 +3,16 @@
   "name": "GuZhenRenRubild",
   "pck_name": "GuZhenRenRubild",
   "author": "Author",
-  "description": "A starter Slay the Spire 2 mod template built on RitsuLib.",
-  "version": "0.0.0",
+  "description": "Gu card core: activation and recovery piles, Yuan Qi, and persistent Gu ranks.",
+  "version": "0.1.0",
   "has_pck": true,
   "has_dll": true,
   "affects_gameplay": true,
-  "min_game_version": "0.106.0",
+  "min_game_version": "0.111.0",
   "dependencies": [
     {
       "id": "STS2-RitsuLib",
-      "version": "0.3.0"
+      "version": "0.5.18"
     }
   ]
 }

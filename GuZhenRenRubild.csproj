@@ -9,6 +9,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <RootNamespace>GuZhenRenRubild</RootNamespace>
+        <Sts2ApiCompat>0.111.0</Sts2ApiCompat>
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
         <PathMap>$(AppOutputBase)=.\</PathMap>
         <NoWarn>$(NoWarn);MSB3270;CS0436</NoWarn>
@@ -18,18 +19,18 @@
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Dir)\data_sts2_windows_x86_64</Sts2DataDir>
         <ModOutputDir>$(Sts2Dir)\mods\$(MSBuildProjectName)\</ModOutputDir>
         <ModPckPath>$(ModOutputDir)$(MSBuildProjectName).pck</ModPckPath>
-        <!-- 本机测试时 RitsuLib 包/构建逻辑会使用这个目录把 RitsuLib 部署到游戏 mods/STS2-RitsuLib。 -->
-        <!-- Local test builds use this directory when RitsuLib package/build logic deploys RitsuLib to game mods/STS2-RitsuLib. -->
+        <!-- 本机测试构建时，RitsuLib 的包与构建逻辑会使用此目录，把依赖部署到游戏的 mods/STS2-RitsuLib 目录。 -->
         <RitsuLibDeployDir Condition="'$(RitsuLibDeployDir)' == ''">$(Sts2Dir)\mods\STS2-RitsuLib</RitsuLibDeployDir>
+        <RitsuLibVersion Condition="'$(RitsuLibVersion)' == ''">0.5.18</RitsuLibVersion>
         <CopyModOnBuild Condition="'$(CopyModOnBuild)' == ''">true</CopyModOnBuild>
         <RunPckExport Condition="'$(RunPckExport)' == '' and '$(DesignTimeBuild)' != 'true'">true</RunPckExport>
         <RunPckExport Condition="'$(RunPckExport)' == ''">false</RunPckExport>
     </PropertyGroup>
 
+    <!-- NuGet 依赖：Publicizer 用于访问游戏内部成员，RitsuLib 提供模组注册、资源和战斗扩展能力。 -->
     <ItemGroup>
         <PackageReference Include="Krafs.Publicizer" Version="2.2.1" PrivateAssets="all"/>
-        <!-- 主线 RitsuLib（STS2 0.105.0+），跟踪 NuGet 最新版本。兼容分支和 manifest 版本对齐规则见 README。 -->
-        <PackageReference Include="STS2.RitsuLib" Version="*" GeneratePathProperty="true"/>
+        <PackageReference Include="STS2.RitsuLib" Version="$(RitsuLibVersion)" GeneratePathProperty="true"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -43,8 +44,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- 中文：排除 Godot、IDE 和构建输出目录，避免本地生成文件参与编译。 -->
-        <!-- English: Exclude Godot, IDE, and build output directories so local generated files are not compiled. -->
+        <!-- 排除 Godot 缓存、IDE 元数据和构建输出目录，避免本地自动生成文件被误当作项目源码或资源参与编译。 -->
         <Compile Remove=".godot/**;.idea/**;.vs/**;bin/**;obj/**"/>
         <EmbeddedResource Remove=".godot/**;.idea/**;.vs/**;bin/**;obj/**"/>
         <None Remove=".godot/**;.idea/**;.vs/**;bin/**;obj/**"/>
@@ -72,22 +72,26 @@
         <Folder Include="GuZhenRenRubild\scenes\characters\"/>
     </ItemGroup>
 
+    <!-- 在解析程序集引用前验证游戏安装目录，尽早给出缺少 sts2.dll 的明确错误。 -->
     <Target Name="ValidateSts2GameInstall" BeforeTargets="ResolveAssemblyReferences">
         <Error Condition="!Exists('$(Sts2DataDir)\sts2.dll')" Text="Could not find sts2.dll under '$(Sts2DataDir)'. Copy local.props.template to local.props and set Sts2Dir/Sts2DataDir for your local game install."/>
     </Target>
 
+    <!-- 编译成功后把模组程序集和清单复制到游戏 mods 目录，方便本机直接测试。 -->
     <Target Name="CopyMod" AfterTargets="Build" Condition="'$(CopyModOnBuild)' != 'false'">
         <MakeDir Directories="$(ModOutputDir)"/>
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModOutputDir)"/>
         <Copy SourceFiles="$(MSBuildProjectDirectory)\$(MSBuildProjectName).json" DestinationFolder="$(ModOutputDir)"/>
     </Target>
 
+    <!-- 使用 Godot 无界面模式导出 PCK 资源包；通过环境变量避免导出流程再次触发自身。 -->
     <Target Name="ExportPCK" AfterTargets="Build" Condition="'$(RunPckExport)' == 'true' and '$(STS2_SKIP_PCK_EXPORT)' != '1'">
         <Error Condition="'$(GodotExe)' == '' or !Exists('$(GodotExe)')" Text="GodotExe is required for PCK export. Copy local.props.template to local.props and set GodotExe, or build with /p:RunPckExport=false."/>
         <MakeDir Directories="$(ModOutputDir)"/>
         <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="&quot;$(GodotExe)&quot; --headless --path &quot;$(MSBuildProjectDirectory)&quot; --export-pack &quot;$(GodotExportPreset)&quot; &quot;$(ModPckPath)&quot;" EnvironmentVariables="STS2_SKIP_PCK_EXPORT=1"/>
     </Target>
 
+    <!-- 构建后同步清单中的 RitsuLib 依赖版本，使清单声明始终与当前 NuGet 包版本一致。 -->
     <Target Name="SyncManifestDependencies" AfterTargets="Build" BeforeTargets="CopyMod"
             Condition="'$(DesignTimeBuild)' != 'true' and '$(PkgSTS2_RitsuLib)' != ''">
         <PropertyGroup>

@@ -4,8 +4,10 @@ using STS2RitsuLib.Utils;
 
 namespace GuZhenRenRubild.Characters;
 
+// 定义角色专属卡池的视觉主题与能量图标，所有注册到该池的卡牌都会继承这些展示配置。
 public sealed class GuZhenRenRubildCardPool : TypeListCardPoolModel
 {
+    // 使用角色主题色创建卡池边框材质；静态缓存可避免每次读取属性时重复创建材质对象。
     private static readonly Material? PoolFrameTintMaterial =
         MaterialUtils.CreateRgbShaderMaterial(0.42f, 0.65f, 0.72f);
 
@@ -19,6 +21,7 @@ public sealed class GuZhenRenRubildCardPool : TypeListCardPoolModel
     public override string? BigEnergyIconPath => $"{Entry.ResPath}/images/characters/energy_big.png";
     public override string? TextEnergyIconPath => $"{Entry.ResPath}/images/characters/energy_text.png";
 
+    // 图鉴条目、能量轮廓和卡池边框使用统一色系，形成角色专属视觉识别。
     public override Color DeckEntryCardColor => GuZhenRenRubildCharacter.ThemeColor;
     public override Color EnergyOutlineColor => new(0.08f, 0.18f, 0.24f);
     public override Material? PoolFrameMaterial => PoolFrameTintMaterial;

@@ -1,5 +1,5 @@
 {
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "模板遗物",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "每回合开始时，抽 [blue]{Cards}[/blue] 张牌。",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "一个用于验证模板工程的示例遗物。"
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "一转空窍",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "战斗开始时拥有 [blue]5[/blue] 点元气。此后每回合恢复 [blue]2[/blue] 点元气。",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "窍中元海翻涌，蛊虫随念而动。"
 }

@@ -7,11 +7,14 @@ using STS2RitsuLib.Scaffolding.Godot;
 
 namespace GuZhenRenRubild.Characters;
 
+// 自动注册角色模型，并通过泛型参数把角色与专属卡池、遗物池和药水池绑定在一起。
 [RegisterCharacter]
 public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRubildCardPool, GuZhenRenRubildRelicPool, GuZhenRenRubildPotionPool>
 {
+    // 角色统一主题色，卡池、药水池、遗物池和地图绘制都会复用该颜色。
     public static readonly Color ThemeColor = new(0.42f, 0.65f, 0.72f);
 
+    // 把资源根目录集中定义在常量中，减少路径拼写错误，也便于以后整体迁移资源目录。
     private const string SceneRoot = $"{Entry.ResPath}/scenes/characters";
     private const string ImageRoot = $"{Entry.ResPath}/images/characters";
     private const string CharacterScenePath = $"{SceneRoot}/GuZhenRenRubild_character.tscn";
@@ -70,6 +73,7 @@ public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRub
 
     // 让 RitsuLib 把普通 Godot 场景转换成游戏需要的 NCreatureVisuals。
     // 自动转换人物场景，让你不需要手动挂脚本。复制即可。
+    // 加载角色场景并交给 RitsuLib 工厂转换为战斗需要的 NCreatureVisuals 节点。
     protected override NCreatureVisuals? TryCreateCreatureVisuals()
     {
         return RitsuGodotNodeFactories.CreateFromScenePath<NCreatureVisuals>(
@@ -77,6 +81,7 @@ public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRub
     }
 
     // 攻击建筑师的攻击特效列表。
+    // 返回建筑师相关机制可以随机选用的攻击特效资源编号。
     public override List<string> GetArchitectAttackVfx()
     {
         return

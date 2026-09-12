@@ -1,38 +1,107 @@
 using System.Reflection;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
+using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Combat;
+using GuZhenRenRubild.Patches;
 using STS2RitsuLib;
 using STS2RitsuLib.Interop;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
 
 namespace GuZhenRenRubild;
 
+// 模组入口类。ModInitializer 会让游戏加载模组时调用 Initialize。
 [ModInitializer(nameof(Initialize))]
 public partial class Entry
 {
-    // ModId 需要和 GuZhenRenRubild.json 里的 id 保持一致。
-    // res://GuZhenRenRubild/... 里的 GuZhenRenRubild 是 PCK 资源目录，不是 C# namespace。
+    // 模组编号同时用于注册命名空间和 Godot 资源根路径，必须与资源目录保持一致。
     public const string ModId = "GuZhenRenRubild";
     public const string ResPath = $"res://{ModId}";
 
+    // 全局日志器供初始化、运行时系统和异常回滚共同使用。
     public static Logger Logger { get; } = new(ModId, LogType.Generic);
 
+    // 初始化可能由多个入口触发，因此使用锁和状态标记保证整个过程只执行一次。
+    private static readonly object InitializationLock = new();
+    // 按依赖顺序登记所有运行时组件；初始化失败时会按相反顺序逐个回滚。
+    private static readonly RuntimeComponent[] RuntimeComponents =
+    [
+        new(nameof(GuCardPileSystem), GuCardPileSystem.Initialize, GuCardPileSystem.Uninitialize),
+        new(nameof(YuanQiSystem), YuanQiSystem.Initialize, YuanQiSystem.Uninitialize),
+        new(nameof(GuCombatPatch), GuCombatPatch.Initialize, GuCombatPatch.Uninitialize),
+        new(nameof(GuRankRewardPatch), GuRankRewardPatch.Initialize, GuRankRewardPatch.Uninitialize),
+        new(nameof(GuRankUpgradePatch), GuRankUpgradePatch.Initialize, GuRankUpgradePatch.Uninitialize),
+    ];
+
+    private static bool _contentRegistered;
+    private static bool _initialized;
+
+    // 先注册静态内容，再启动牌堆、元气和 Harmony 补丁。整个过程按事务式思路处理，任一组件失败都会回滚已启动组件。
     public static void Initialize()
     {
-        var assembly = Assembly.GetExecutingAssembly();
+        lock (InitializationLock)
+        {
+            if (_initialized)
+            {
+                return;
+            }
 
-        // 以下示例默认已经在 Entry.Initialize() 中调用了
-        // RitsuLibFramework.EnsureGodotScriptsRegistered(...) 和
-        // ModTypeDiscoveryHub.RegisterModAssembly(...)，否则自动注册不会生效。
-        //
-        // Godot C# 脚本注册只负责让 pck 中的脚本类型能被 Godot 找到。
-        // 这一步和 RitsuLib 的内容自动注册不是同一件事，两个都需要保留。
-        RitsuLibFramework.EnsureGodotScriptsRegistered(assembly, Logger);
+            RegisterContentOnce();
 
-        // 自动注册扫描会读取当前程序集里的 RegisterCard/RegisterRelic 等 attribute。
-        // 新增内容类后，只要 attribute 写对，通常不需要在入口里手动逐个注册。
-        ModTypeDiscoveryHub.RegisterModAssembly(ModId, assembly);
+            // 记录已经成功初始化的组件数量，异常时只回滚真正启动过的部分。
+            int initializedCount = 0;
+            try
+            {
+                foreach (RuntimeComponent component in RuntimeComponents)
+                {
+                    component.Initialize();
+                    initializedCount++;
+                }
 
-        Logger.Info("GuZhenRenRubild initialized.");
+                _initialized = true;
+                Logger.Info("Gu card core initialized.");
+            }
+            catch
+            {
+                // 按初始化的逆序回滚，尽量恢复到调用 Initialize 之前的状态；单个回滚失败只记录日志，不覆盖原始异常。
+                for (int index = initializedCount - 1; index >= 0; index--)
+                {
+                    try
+                    {
+                        RuntimeComponents[index].Uninitialize();
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        Logger.Warn(
+                            $"Failed to roll back {RuntimeComponents[index].Name}: " +
+                            rollbackException.Message
+                        );
+                    }
+                }
+
+                throw;
+            }
+        }
     }
+
+    // 自动注册当前程序集中的 Godot 脚本与 RitsuLib 内容类型；该步骤只需要执行一次。
+    private static void RegisterContentOnce()
+    {
+        if (_contentRegistered)
+        {
+            return;
+        }
+
+        Assembly assembly = Assembly.GetExecutingAssembly();
+        RitsuLibFramework.EnsureGodotScriptsRegistered(assembly, Logger);
+        ModTypeDiscoveryHub.RegisterModAssembly(ModId, assembly);
+        _contentRegistered = true;
+    }
+
+    // 用轻量只读记录统一保存组件名称、初始化委托和反初始化委托，便于循环处理和异常回滚。
+    private readonly record struct RuntimeComponent(
+        string Name,
+        Action Initialize,
+        Action Uninitialize
+    );
 }

@@ -10,6 +10,7 @@ using STS2RitsuLib.Scaffolding.Content;
 namespace GuZhenRenRubild.Cards;
 
 // 防御牌和打击一样注册到角色卡池，并作为 4 张初始卡加入角色卡组。
+// 这是一张模板用的普通防御牌，主要展示角色卡池注册、动态格挡值和升级写法。
 [RegisterCard(typeof(GuZhenRenRubildCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 4)]
 public sealed class GuZhenRenRubildDefend : ModCardTemplate
@@ -41,6 +42,7 @@ public sealed class GuZhenRenRubildDefend : ModCardTemplate
         new BlockVar(5m, ValueProp.Move)
     ];
 
+    // 构造函数只负责把静态卡牌元数据交给基类；具体效果数值由 CanonicalVars 提供。
     public GuZhenRenRubildDefend() : base(BaseEnergyCost, CardKind, CardRarityValue, CardTarget, ShowInCardLibrary)
     {
     }
