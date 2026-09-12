@@ -1,6 +1,8 @@
 using System.Reflection;
-using System.Threading;
-using GuZhenRenRubild.Cards.Rules;
+using GuZhenRenRubild.Cards.Core.Rules;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
+using GuZhenRenRubild.Common.Scoping;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -17,77 +19,59 @@ namespace GuZhenRenRubild.Patches;
 internal static class GuCardRewardPatch
 {
     private const string HarmonyId = Entry.ModId + ".GuCardReward";
-    private static readonly AsyncLocal<int> RewardCandidateQueryDepth = new();
-    private static bool _initialized;
 
-    private sealed class RewardQueryScope(int previousDepth)
-    {
-        private bool _restored;
+    // 标记"当前调用链正处于奖励候选查询中"，使深层调用也能识别这一次查询的来源。
+    private static readonly AmbientFlag RewardCandidateQuery = new();
 
-        internal void Restore()
-        {
-            if (_restored)
-            {
-                return;
-            }
-
-            RewardCandidateQueryDepth.Value = previousDepth;
-            _restored = true;
-        }
-    }
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
-
-        MethodInfo getPossibleCards = AccessTools.Method(
-            typeof(CardCreationOptions),
-            nameof(CardCreationOptions.GetPossibleCards),
-            [typeof(Player)]
-        ) ?? throw new MissingMethodException(typeof(CardCreationOptions).FullName, nameof(CardCreationOptions.GetPossibleCards));
-        MethodInfo createForReward = AccessTools.Method(
-            typeof(CardFactory),
-            nameof(CardFactory.CreateForReward),
-            [typeof(Player), typeof(int), typeof(CardCreationOptions)]
-        ) ?? throw new MissingMethodException(typeof(CardFactory).FullName, nameof(CardFactory.CreateForReward));
-        MethodInfo modifyRewardOptions = AccessTools.Method(
-            typeof(Hook),
-            nameof(Hook.TryModifyCardRewardOptions),
-            [
-                typeof(IRunState),
-                typeof(Player),
-                typeof(List<CardCreationResult>),
+            MethodInfo getPossibleCards = RequiredMember.Method(
                 typeof(CardCreationOptions),
-                typeof(List<AbstractModel>).MakeByRefType(),
-            ]
-        ) ?? throw new MissingMethodException(typeof(Hook).FullName, nameof(Hook.TryModifyCardRewardOptions));
+                nameof(CardCreationOptions.GetPossibleCards),
+                [typeof(Player)]
+            );
+            MethodInfo createForReward = RequiredMember.Method(
+                typeof(CardFactory),
+                nameof(CardFactory.CreateForReward),
+                [typeof(Player), typeof(int), typeof(CardCreationOptions)]
+            );
+            MethodInfo modifyRewardOptions = RequiredMember.Method(
+                typeof(Hook),
+                nameof(Hook.TryModifyCardRewardOptions),
+                [
+                    typeof(IRunState),
+                    typeof(Player),
+                    typeof(List<CardCreationResult>),
+                    typeof(CardCreationOptions),
+                    typeof(List<AbstractModel>).MakeByRefType(),
+                ]
+            );
 
-        Harmony harmony = new(HarmonyId);
-        harmony.Patch(
-            getPossibleCards,
-            postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(GetPossibleCardsPostfix))
-        );
-        harmony.Patch(
-            createForReward,
-            prefix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardPrefix)),
-            postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardPostfix)),
-            finalizer: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardFinalizer))
-        );
-        harmony.Patch(
-            modifyRewardOptions,
-            postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(ModifyRewardOptionsPostfix))
-        );
-        _initialized = true;
+            harmony.Patch(
+                getPossibleCards,
+                postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(GetPossibleCardsPostfix))
+            );
+            harmony.Patch(
+                createForReward,
+                prefix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardPrefix)),
+                postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardPostfix)),
+                finalizer: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(CreateForRewardFinalizer))
+            );
+            harmony.Patch(
+                modifyRewardOptions,
+                postfix: new HarmonyMethod(typeof(GuCardRewardPatch), nameof(ModifyRewardOptionsPostfix))
+            );
+        });
     }
 
     internal static void Uninitialize()
     {
-        new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        RewardCandidateQueryDepth.Value = 0;
-        _initialized = false;
+        Host.Unpatch(RewardCandidateQuery.Reset);
     }
 
     private static void GetPossibleCardsPostfix(
@@ -95,7 +79,7 @@ internal static class GuCardRewardPatch
         ref IEnumerable<CardModel> __result
     )
     {
-        if (RewardCandidateQueryDepth.Value <= 0)
+        if (!RewardCandidateQuery.IsActive)
         {
             return;
         }
@@ -112,11 +96,10 @@ internal static class GuCardRewardPatch
         ref int cardCount,
         CardCreationOptions options,
         ref IEnumerable<CardCreationResult> __result,
-        out RewardQueryScope __state
+        out IDisposable __state
     )
     {
-        __state = new RewardQueryScope(RewardCandidateQueryDepth.Value);
-        RewardCandidateQueryDepth.Value++;
+        __state = RewardCandidateQuery.Enter();
 
         CardModel[] possibleCards = options
             .GetPossibleCards(player)
@@ -142,17 +125,17 @@ internal static class GuCardRewardPatch
         return true;
     }
 
-    private static void CreateForRewardPostfix(RewardQueryScope __state)
+    private static void CreateForRewardPostfix(IDisposable __state)
     {
-        __state.Restore();
+        __state.Dispose();
     }
 
     private static Exception? CreateForRewardFinalizer(
         Exception? __exception,
-        RewardQueryScope __state
+        IDisposable __state
     )
     {
-        __state.Restore();
+        __state.Dispose();
         return __exception;
     }
 

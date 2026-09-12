@@ -1,5 +1,7 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Models;
 
@@ -11,46 +13,37 @@ internal static class GuRankUpPreviewPatch
     private const string HarmonyId = Entry.ModId + ".GuRankUpPreview";
     private static readonly FieldInfo? UpgradedEventField =
         AccessTools.Field(typeof(CardModel), nameof(CardModel.Upgraded));
-    private static bool _initialized;
+
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
+            MethodInfo isUpgradable = RequiredMember.PropertyGetter(
+                typeof(CardModel), nameof(CardModel.IsUpgradable)
+            );
+            MethodInfo upgradeInternal = RequiredMember.DeclaredMethod(
+                typeof(CardModel), nameof(CardModel.UpgradeInternal)
+            );
 
-        MethodInfo isUpgradable = AccessTools.PropertyGetter(
-            typeof(CardModel), nameof(CardModel.IsUpgradable)
-        ) ?? throw new MissingMethodException(typeof(CardModel).FullName, nameof(CardModel.IsUpgradable));
-        MethodInfo upgradeInternal = AccessTools.DeclaredMethod(
-            typeof(CardModel), nameof(CardModel.UpgradeInternal)
-        ) ?? throw new MissingMethodException(typeof(CardModel).FullName, nameof(CardModel.UpgradeInternal));
-
-        Harmony harmony = new(HarmonyId);
-        harmony.Patch(
-            isUpgradable,
-            postfix: new HarmonyMethod(typeof(GuRankUpPreviewPatch), nameof(IsUpgradablePostfix))
-        );
-        harmony.Patch(
-            upgradeInternal,
-            prefix: new HarmonyMethod(typeof(GuRankUpPreviewPatch), nameof(UpgradeInternalPrefix))
-        );
-        GuRankUpPreviewSupport.PatchUpgradeDescription(harmony);
-        _initialized = true;
+            harmony.Patch(
+                isUpgradable,
+                postfix: new HarmonyMethod(typeof(GuRankUpPreviewPatch), nameof(IsUpgradablePostfix))
+            );
+            harmony.Patch(
+                upgradeInternal,
+                prefix: new HarmonyMethod(typeof(GuRankUpPreviewPatch), nameof(UpgradeInternalPrefix))
+            );
+            GuRankUpPreviewSupport.PatchUpgradeDescription(harmony);
+        });
     }
 
     internal static void Uninitialize()
     {
-        try
-        {
-            new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        }
-        finally
-        {
-            GuRankUpPreviewSupport.Reset();
-            _initialized = false;
-        }
+        // 与手写 try/finally 等价：先解除补丁，再由 Host 调用预览状态清理，最后置回未初始化。
+        Host.Unpatch(GuRankUpPreviewSupport.Reset);
     }
 
     internal static IDisposable Begin(

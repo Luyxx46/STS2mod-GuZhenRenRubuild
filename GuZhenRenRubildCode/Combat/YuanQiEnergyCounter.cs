@@ -1,4 +1,5 @@
 using Godot;
+using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -34,7 +35,6 @@ public sealed partial class YuanQiEnergyCounter : Control
     private Control? _rotationLayers;
     private Node? _backVfx;
     private Node? _frontVfx;
-    private Player? _player;
     private int _amount;
     private int? _maxAmount;
 
@@ -78,7 +78,6 @@ public sealed partial class YuanQiEnergyCounter : Control
 
     public void Bind(Player? player)
     {
-        _player = player;
         Refresh(player);
     }
 
@@ -91,7 +90,6 @@ public sealed partial class YuanQiEnergyCounter : Control
         }
 
         int oldAmount = _amount;
-        _player = player;
         _amount = SecondaryResourceCmd.Get(player, _definition.Id);
         _maxAmount = SecondaryResourceCmd.GetMax(player, _definition.Id);
 
@@ -107,7 +105,7 @@ public sealed partial class YuanQiEnergyCounter : Control
             ThemeConstants.Label.FontOutlineColor,
             _amount <= 0
                 ? StsColors.unplayableEnergyCostOutline
-                : new Color(0.08f, 0.18f, 0.24f)
+                : GuZhenRenRubildAssets.EnergyOutlineColor
         );
 
         ApplyZeroAmountVisualState();
@@ -315,53 +313,66 @@ public sealed partial class YuanQiEnergyCounter : Control
         }
     }
 
-    private static void RestartParticlesRecursive(Node? root)
+    private static void RestartParticlesRecursive(Node? root) =>
+        VisitParticles(
+            root,
+            static particles =>
+            {
+                particles.Visible = true;
+                particles.Restart();
+                particles.Emitting = true;
+            },
+            static particles =>
+            {
+                particles.Visible = true;
+                particles.Restart();
+                particles.Emitting = true;
+            }
+        );
+
+    private static void StopParticlesRecursive(Node? root) =>
+        VisitParticles(
+            root,
+            static particles =>
+            {
+                particles.Emitting = false;
+                particles.Visible = false;
+            },
+            static particles =>
+            {
+                particles.Emitting = false;
+                particles.Visible = false;
+            }
+        );
+
+    /// <summary>
+    /// 递归遍历节点树中的粒子节点。CPU 与 GPU 粒子是两套没有公共接口的类型，
+    /// 因此把"找到什么就做什么"交给两个回调，遍历逻辑只写一份。
+    /// </summary>
+    private static void VisitParticles(
+        Node? root,
+        Action<CpuParticles2D> onCpuParticles,
+        Action<GpuParticles2D> onGpuParticles
+    )
     {
         if (root == null)
         {
             return;
         }
 
-        if (root is CpuParticles2D cpuParticles)
+        switch (root)
         {
-            cpuParticles.Visible = true;
-            cpuParticles.Restart();
-            cpuParticles.Emitting = true;
-        }
-        else if (root is GpuParticles2D gpuParticles)
-        {
-            gpuParticles.Visible = true;
-            gpuParticles.Restart();
-            gpuParticles.Emitting = true;
+            case CpuParticles2D cpuParticles:
+                onCpuParticles(cpuParticles);
+                break;
+            case GpuParticles2D gpuParticles:
+                onGpuParticles(gpuParticles);
+                break;
         }
 
         foreach (Node child in root.GetChildren())
         {
-            RestartParticlesRecursive(child);
-        }
-    }
-
-    private static void StopParticlesRecursive(Node? root)
-    {
-        if (root == null)
-        {
-            return;
-        }
-
-        if (root is CpuParticles2D cpuParticles)
-        {
-            cpuParticles.Emitting = false;
-            cpuParticles.Visible = false;
-        }
-        else if (root is GpuParticles2D gpuParticles)
-        {
-            gpuParticles.Emitting = false;
-            gpuParticles.Visible = false;
-        }
-
-        foreach (Node child in root.GetChildren())
-        {
-            StopParticlesRecursive(child);
+            VisitParticles(child, onCpuParticles, onGpuParticles);
         }
     }
 

@@ -1,25 +1,25 @@
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Companions;
 using GuZhenRenRubild.Characters;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace GuZhenRenRubild.Cards;
+namespace GuZhenRenRubild.Cards.Gu;
 
 // 将“玉皮蛊”注册进角色卡池，并作为 1 张初始蛊牌加入角色初始牌组。
+// 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出 1 张玉皮甲。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 1)]
-public sealed class YuPiGu : AbstractGuCard
+public sealed class YuPiGu : AbstractGuBlockCard, ICompanionSourceGuCard
 {
+    public CompanionDefinition Companion => new(typeof(YuPiCompanion));
+
     // 声明格挡动态变量；最终基础值会由品阶公式在 RefreshValues 中覆盖。
     protected override IEnumerable<DynamicVar> CanonicalVars =>
         [new BlockVar(8m, ValueProp.Move)];
-
-    // 告诉游戏该卡会获得格挡，供提示、统计及其他规则系统识别。
-    public override bool GainsBlock => true;
 
     // 暂时复用模板防御牌卡图，后续可直接替换为玉皮蛊专属资源。
     public override CardAssetProfile AssetProfile => new(
@@ -31,15 +31,6 @@ public sealed class YuPiGu : AbstractGuCard
         : base(CardType.Skill, CardRarity.Common, TargetType.Self)
     {
         RefreshValues();
-    }
-
-    // 打出后按动态变量中的最终格挡值为角色获得格挡。
-    protected override async Task OnPlay(
-        PlayerChoiceContext choiceContext,
-        CardPlay cardPlay
-    )
-    {
-        await CreatureCmd.GainBlock(Owner.Creature, DynamicVars.Block, cardPlay);
     }
 
     // 品阶发生变化或从存档恢复后，重新计算所有依赖品阶的卡牌数值。

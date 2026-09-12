@@ -19,3 +19,4 @@ local.props
 .dsh/
 # VS Code 个人设置：写死了本机 Godot 编辑器路径（godotTools.editorPath.godot4）
 .vscode/settings.json
+.mnemon/

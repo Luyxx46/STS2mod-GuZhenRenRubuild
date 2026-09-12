@@ -8,7 +8,7 @@ using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Content;
 using STS2RitsuLib.Utils;
 
-namespace GuZhenRenRubild.Cards;
+namespace GuZhenRenRubild.Cards.Core;
 
 /// <summary>
 /// 蛊牌的统一抽象基类，负责保存蛊牌品阶，并定义蛊牌从专用激活区使用时需要遵守的基础规则。
@@ -200,5 +200,55 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
         _rankAssigned = true;
         RankAssignedState[this] = true;
         OnGuRankChanged();
+    }
+
+    // =========================================================
+    // 合练（HeLian）入口
+    // =========================================================
+
+    /// <summary>
+    /// 使用命中配方的全部合练材料初始化结果牌。
+    ///
+    /// 该入口位于公共蛊牌父类，因此声明配方的常规蛊牌也可以作为合练结果，
+    /// 而不要求继承专用的合练牌父类。结果转数由 <see cref="CalculateHeLianResultRank"/>
+    /// 决定；默认取最高转数，特定配方可改为固定转数等策略。
+    /// </summary>
+    internal void InitializeFromHeLian(IReadOnlyList<CardModel> materials)
+    {
+        ArgumentNullException.ThrowIfNull(materials);
+
+        if (materials.Count < 2)
+        {
+            throw new ArgumentException(
+                "合练至少需要两张材料牌。",
+                nameof(materials)
+            );
+        }
+
+        SetGuRank(CalculateHeLianResultRank(materials));
+        OnHeLianCompleted(materials);
+    }
+
+    /// <summary>
+    /// 计算合练结果转数。默认取全部材料中的最高转数。
+    /// </summary>
+    protected virtual int CalculateHeLianResultRank(
+        IReadOnlyList<CardModel> materials
+    )
+    {
+        return materials
+            .OfType<IGuCard>()
+            .Select(gu => Math.Max(MinimumGuRank, gu.GuRank))
+            .DefaultIfEmpty(MinimumGuRank)
+            .Max();
+    }
+
+    /// <summary>
+    /// 卡牌由合练生成并写入转数后的扩展钩子。
+    /// </summary>
+    protected virtual void OnHeLianCompleted(
+        IReadOnlyList<CardModel> materials
+    )
+    {
     }
 }

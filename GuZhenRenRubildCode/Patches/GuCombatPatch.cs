@@ -1,6 +1,8 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards;
-using GuZhenRenRubild.Cards.Companions;
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -19,62 +21,59 @@ namespace GuZhenRenRubild.Patches;
 internal static class GuCombatPatch
 {
     private const string HarmonyId = Entry.ModId + ".GuCombat";
-    private static bool _initialized;
+
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
-
-        MethodInfo populateCombatState = AccessTools.DeclaredMethod(
-            typeof(Player),
-            nameof(Player.PopulateCombatState),
-            [typeof(Rng), typeof(CombatState)]
-        ) ?? throw new MissingMethodException(typeof(Player).FullName, nameof(Player.PopulateCombatState));
-        MethodInfo startCombat = AccessTools.DeclaredMethod(
-            typeof(NetCombatCardDb),
-            nameof(NetCombatCardDb.StartCombat),
-            [typeof(IReadOnlyList<Player>)]
-        ) ?? throw new MissingMethodException(typeof(NetCombatCardDb).FullName, nameof(NetCombatCardDb.StartCombat));
-        MethodInfo drawInternal = AccessTools.DeclaredMethod(
-            typeof(CardPileCmd),
-            "DrawInternal",
-            [
-                typeof(PlayerChoiceContext),
-                typeof(decimal),
+            MethodInfo populateCombatState = RequiredMember.DeclaredMethod(
                 typeof(Player),
-                typeof(bool),
-            ]
-        ) ?? throw new MissingMethodException(typeof(CardPileCmd).FullName, "DrawInternal");
+                nameof(Player.PopulateCombatState),
+                [typeof(Rng), typeof(CombatState)]
+            );
+            MethodInfo startCombat = RequiredMember.DeclaredMethod(
+                typeof(NetCombatCardDb),
+                nameof(NetCombatCardDb.StartCombat),
+                [typeof(IReadOnlyList<Player>)]
+            );
+            MethodInfo drawInternal = RequiredMember.DeclaredMethod(
+                typeof(CardPileCmd),
+                "DrawInternal",
+                [
+                    typeof(PlayerChoiceContext),
+                    typeof(decimal),
+                    typeof(Player),
+                    typeof(bool),
+                ]
+            );
 
-        if (drawInternal.ReturnType != typeof(Task<IEnumerable<CardModel>>))
-        {
-            throw new MissingMethodException("CardPileCmd.DrawInternal has an unexpected return type.");
-        }
+            if (drawInternal.ReturnType != typeof(Task<IEnumerable<CardModel>>))
+            {
+                throw new MissingMethodException("CardPileCmd.DrawInternal has an unexpected return type.");
+            }
 
-        Harmony harmony = new(HarmonyId);
-        harmony.Patch(
-            populateCombatState,
-            prefix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePrefix)),
-            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePostfix))
-        );
-        harmony.Patch(
-            startCombat,
-            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(StartCombatPostfix))
-        );
-        harmony.Patch(
-            drawInternal,
-            postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(DrawInternalPostfix))
-        );
-        _initialized = true;
+            harmony.Patch(
+                populateCombatState,
+                prefix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePrefix)),
+                postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(PopulateCombatStatePostfix))
+            );
+            harmony.Patch(
+                startCombat,
+                postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(StartCombatPostfix))
+            );
+            harmony.Patch(
+                drawInternal,
+                postfix: new HarmonyMethod(typeof(GuCombatPatch), nameof(DrawInternalPostfix))
+            );
+        });
     }
 
     internal static void Uninitialize()
     {
-        new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        _initialized = false;
+        Host.Unpatch();
     }
 
     private static void PopulateCombatStatePrefix(Player __instance)

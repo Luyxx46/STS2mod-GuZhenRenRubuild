@@ -1,6 +1,6 @@
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Gu;
 using GuZhenRenRubild.Characters;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>月光蛊的验证用永久伴生普通牌。</summary>
 [RegisterCard(typeof(GuZhenRenRubildCardPool))]
@@ -28,18 +28,15 @@ public sealed class YueGuangCompanion : AbstractCompanionCard
     {
     }
 
-    protected override async Task OnPlay(
+    protected override Task OnPlay(
         PlayerChoiceContext choiceContext,
         CardPlay cardPlay
-    )
-    {
-        ArgumentNullException.ThrowIfNull(cardPlay.Target);
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this, cardPlay)
-            .Targeting(cardPlay.Target)
-            .WithHitFx("vfx/vfx_attack_slash")
-            .Execute(choiceContext);
-    }
+    ) => GuCardPlay.AttackAsync(
+        this,
+        choiceContext,
+        cardPlay,
+        GuCardPlay.DefaultAttackHitFx
+    );
 
     protected override void OnUpgrade()
     {

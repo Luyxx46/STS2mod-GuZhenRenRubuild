@@ -1,19 +1,19 @@
 using GuZhenRenRubild.Characters;
-using GuZhenRenRubild.Cards.Companions;
-using MegaCrit.Sts2.Core.Commands;
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Companions;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace GuZhenRenRubild.Cards;
+namespace GuZhenRenRubild.Cards.Gu;
 
 // 将“月光蛊”注册进角色卡池，并作为 2 张初始蛊牌加入角色初始牌组。
+// 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出对应数量的月刃。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 2)]
-public sealed class YueGuangGu : AbstractGuCard, ICompanionSourceGuCard
+public sealed class YueGuangGu : AbstractGuAttackCard, ICompanionSourceGuCard
 {
     public CompanionDefinition Companion => new(typeof(YueGuangCompanion));
 
@@ -31,25 +31,6 @@ public sealed class YueGuangGu : AbstractGuCard, ICompanionSourceGuCard
         : base(CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
     {
         RefreshValues();
-    }
-
-    // 仅在目标存在且通过卡牌自身目标校验时发动攻击，避免联机或自动流程传入无效目标。
-    protected override async Task OnPlay(
-        PlayerChoiceContext choiceContext,
-        CardPlay cardPlay
-    )
-    {
-        if (cardPlay.Target == null || !IsValidTarget(cardPlay.Target))
-        {
-            return;
-        }
-
-        // 使用当前基础伤害创建攻击命令，并绑定本次卡牌打出上下文和斩击命中特效。
-        await DamageCmd.Attack(DynamicVars.Damage.BaseValue)
-            .FromCard(this, cardPlay)
-            .Targeting(cardPlay.Target)
-            .WithHitFx("vfx/vfx_attack_slash")
-            .Execute(choiceContext);
     }
 
     // 品阶变化时同步刷新伤害，保证卡面显示和实际结算使用同一数值。

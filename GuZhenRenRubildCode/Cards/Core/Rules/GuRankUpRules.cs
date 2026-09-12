@@ -1,7 +1,7 @@
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Rules;
+namespace GuZhenRenRubild.Cards.Core.Rules;
 
 /// <summary>篝火升炼的纯规则层。</summary>
 public static class GuRankUpRules

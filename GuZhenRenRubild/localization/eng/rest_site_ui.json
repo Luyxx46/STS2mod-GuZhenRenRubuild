@@ -1,5 +1,15 @@
 {
   "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.name": "Gu Refinement",
   "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.description": "Refine Gu cards. You have 2 refinement slots; Gu below Rank 6 cost 1 slot, Rank 6 or higher cost 2 slots.",
-  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "Choose a Gu to refine. Confirm each rank increase individually."
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "Choose a Gu to refine. Confirm each rank increase individually.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.name": "Gu Fusion",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.description": "First select a currently craftable Gu card, then select Gu Worm materials matching that target. Materials are consumed and the result is created only when both types and quantities match; failed attempts do not consume the use. Fusion can succeed once per rest site.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.selectionPrompt": "Select materials matching the target Gu card, then confirm.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.targetSelectionPrompt": "First select the Gu card to craft. Only materials that can match the target will be shown next.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.successTitle": "Fusion Successful",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.failureTitle": "Fusion Failed",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.success": "{Materials}\n→ [gold]{Result}[/gold]\n\nResult rank: {Rank}",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.noRecipe": "There is no craftable fusion recipe in the current deck.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.unmatchedMaterials": "The selected materials do not match a fusion recipe:\n{Materials}\n\nCheck the material types and quantities.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.exception": "Fusion failed during execution. The materials and deck history were restored where possible.\n\n{Message}"
 }

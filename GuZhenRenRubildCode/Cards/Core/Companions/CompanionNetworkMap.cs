@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>
 /// PairId 是持久身份；DeckIndex / CombatCardId 只缓存在当前运行时作用域。
@@ -98,68 +98,72 @@ public static class CompanionNetworkMap
         }
     }
 
-    internal static bool TryGetCompanion(CardModel source, out CardModel companion)
+    internal static bool TryGetCompanion(CardModel source, out CardModel companion) =>
+        TryResolveMappedCard(
+            source,
+            static map => map.DeckForward,
+            static map => map.CombatForward,
+            out companion
+        );
+
+    internal static bool TryGetSource(CardModel companion, out CardModel source) =>
+        TryResolveMappedCard(
+            companion,
+            static map => map.DeckReverse,
+            static map => map.CombatReverse,
+            out source
+        );
+
+    /// <summary>
+    /// 按当前牌所在区域选择映射：永久牌组用 DeckIndex，战斗牌用战斗网络编号。
+    /// 正向（来源→伴生）与反向（伴生→来源）只差传入的字典，因此共用一套查找流程。
+    /// </summary>
+    private static bool TryResolveMappedCard(
+        CardModel anchor,
+        Func<PlayerMap, Dictionary<uint, uint>> deckMapSelector,
+        Func<PlayerMap, Dictionary<uint, uint>> combatMapSelector,
+        out CardModel mapped
+    )
     {
-        companion = null!;
-        Player? owner = source.Owner;
+        mapped = null!;
+
+        Player? owner = anchor.Owner;
         if (owner == null || !Maps.TryGetValue(owner, out PlayerMap? map))
         {
             return false;
         }
 
-        if (source.Pile?.Type == PileType.Deck)
+        if (anchor.Pile?.Type == PileType.Deck)
         {
-            uint sourceId = NetDeckCard.FromModel(source).DeckIndex;
-            if (!map.DeckForward.TryGetValue(sourceId, out uint companionId))
+            uint anchorDeckIndex = NetDeckCard.FromModel(anchor).DeckIndex;
+            if (!deckMapSelector(map).TryGetValue(
+                    anchorDeckIndex,
+                    out uint mappedDeckIndex
+                ))
             {
                 return false;
             }
 
-            companion = new NetDeckCardAccessor(companionId).ToCardModel(owner);
+            mapped = new NetDeckCardAccessor(mappedDeckIndex).ToCardModel(owner);
             return true;
         }
 
-        if (source.Pile?.IsCombatPile == true &&
-            NetCombatCardDb.Instance.TryGetCardId(source, out uint combatSourceId) &&
-            map.CombatForward.TryGetValue(combatSourceId, out uint combatCompanionId) &&
-            NetCombatCardDb.Instance.TryGetCard(combatCompanionId, out CardModel? combatCompanion) &&
-            combatCompanion != null)
+        if (anchor.Pile?.IsCombatPile == true &&
+            NetCombatCardDb.Instance.TryGetCardId(
+                anchor,
+                out uint anchorCombatId
+            ) &&
+            combatMapSelector(map).TryGetValue(
+                anchorCombatId,
+                out uint mappedCombatId
+            ) &&
+            NetCombatCardDb.Instance.TryGetCard(
+                mappedCombatId,
+                out CardModel? combatCard
+            ) &&
+            combatCard != null)
         {
-            companion = combatCompanion;
-            return true;
-        }
-
-        return false;
-    }
-
-    internal static bool TryGetSource(CardModel companion, out CardModel source)
-    {
-        source = null!;
-        Player? owner = companion.Owner;
-        if (owner == null || !Maps.TryGetValue(owner, out PlayerMap? map))
-        {
-            return false;
-        }
-
-        if (companion.Pile?.Type == PileType.Deck)
-        {
-            uint companionId = NetDeckCard.FromModel(companion).DeckIndex;
-            if (!map.DeckReverse.TryGetValue(companionId, out uint sourceId))
-            {
-                return false;
-            }
-
-            source = new NetDeckCardAccessor(sourceId).ToCardModel(owner);
-            return true;
-        }
-
-        if (companion.Pile?.IsCombatPile == true &&
-            NetCombatCardDb.Instance.TryGetCardId(companion, out uint combatCompanionId) &&
-            map.CombatReverse.TryGetValue(combatCompanionId, out uint combatSourceId) &&
-            NetCombatCardDb.Instance.TryGetCard(combatSourceId, out CardModel? combatSource) &&
-            combatSource != null)
-        {
-            source = combatSource;
+            mapped = combatCard;
             return true;
         }
 

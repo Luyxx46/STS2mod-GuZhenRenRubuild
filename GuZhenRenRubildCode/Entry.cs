@@ -2,7 +2,7 @@ using System.Reflection;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 using GuZhenRenRubild.Aperture;
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.Patches;
 using STS2RitsuLib;
@@ -37,6 +37,8 @@ public partial class Entry
         new(nameof(GuRankRewardPatch), GuRankRewardPatch.Initialize, GuRankRewardPatch.Uninitialize),
         new(nameof(GuRankUpPreviewPatch), GuRankUpPreviewPatch.Initialize, GuRankUpPreviewPatch.Uninitialize),
         new(nameof(GuCombatPatch), GuCombatPatch.Initialize, GuCombatPatch.Uninitialize),
+        // 蛊手牌布局补丁只依赖牌堆注册结果，必须晚于 GuCardPileSystem 启动。
+        new(nameof(GuHandLayoutPatch), GuHandLayoutPatch.Initialize, GuHandLayoutPatch.Uninitialize),
     ];
 
     private static bool _contentRegistered;

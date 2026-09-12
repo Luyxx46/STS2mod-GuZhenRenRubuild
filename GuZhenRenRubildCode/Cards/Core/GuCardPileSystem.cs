@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.CardPiles;
 
-namespace GuZhenRenRubild.Cards;
+namespace GuZhenRenRubild.Cards.Core;
 
 /// <summary>
 /// 管理战斗内蛊牌的三个专用牌堆，并实现完整循环：储备区 → 激活区 → 恢复区 → 储备区。
@@ -21,10 +21,12 @@ public static class GuCardPileSystem
     private const string ActiveLocalId = "gu_active";
     private const string StorageLocalId = "gu_storage";
     private const string RecoveryLocalId = "gu_recovery";
+    // 牌堆图标沿用旧模组 STS2_GuZhenRen（GuZhenRenPersonal）的真实美术，
+    // 原名分别是「蛊存放排队」与「蛊冷却排队」，此处只把资源根目录换成当前模组。
     private const string StorageIconPath =
-        $"res://{Entry.ModId}/materials/GuStoragePile.svg";
+        $"res://{Entry.ModId}/images/ui/GuChunFangPaiDui.png";
     private const string RecoveryIconPath =
-        $"res://{Entry.ModId}/materials/GuRecoveryPile.svg";
+        $"res://{Entry.ModId}/images/ui/GuLengQuePaiDui.png";
 
     // 注册过程使用互斥锁和初始化标记，避免多入口重复注册同名牌堆。
     private static readonly object SyncRoot = new();
@@ -41,7 +43,6 @@ public static class GuCardPileSystem
 
     // 注册完成后缓存 RitsuLib 返回的牌堆类型，后续所有移动操作都使用这些类型。
     public static PileType ActivePileType { get; private set; }
-    public static PileType GuHandPileType => ActivePileType;
     public static PileType StoragePileType { get; private set; }
     public static PileType RecoveryPileType { get; private set; }
 
@@ -163,10 +164,6 @@ public static class GuCardPileSystem
             Completed = openingCards.Length == 0,
         });
     }
-
-    // 兼容旧调用名；新代码使用更明确的 InitializeGuCardsForCombat。
-    internal static void InitializeCombat(Player owner) =>
-        InitializeGuCardsForCombat(owner);
 
     internal static Task? BeginOpeningGuEntry(Player owner, bool fromHandDraw)
     {

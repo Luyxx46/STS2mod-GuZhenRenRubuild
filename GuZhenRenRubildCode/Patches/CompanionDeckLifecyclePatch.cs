@@ -1,5 +1,7 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards.Companions;
+using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -19,7 +21,9 @@ namespace GuZhenRenRubild.Patches;
 internal static class CompanionDeckLifecyclePatch
 {
     private const string HarmonyId = Entry.ModId + ".CompanionDeckLifecycle";
-    private static bool _initialized;
+
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     private sealed record TransformEntryState(
         CompanionRelationshipService.TransformSnapshot PairState,
@@ -29,77 +33,74 @@ internal static class CompanionDeckLifecyclePatch
 
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
+            MethodInfo add = RequiredMember.Method(
+                typeof(CardPileCmd),
+                nameof(CardPileCmd.Add),
+                [
+                    typeof(IEnumerable<CardModel>),
+                    typeof(CardPile),
+                    typeof(CardPilePosition),
+                    typeof(AbstractModel),
+                    typeof(bool),
+                    // 该重载还带有 isChangingOwners；反射签名必须与运行时参数列表逐位一致，否则查不到方法。
+                    typeof(bool),
+                ]
+            );
+            MethodInfo remove = RequiredMember.Method(
+                typeof(CardPileCmd),
+                nameof(CardPileCmd.RemoveFromDeck),
+                [typeof(IReadOnlyList<CardModel>), typeof(bool)]
+            );
+            MethodInfo transform = RequiredMember.Method(
+                typeof(CardCmd),
+                nameof(CardCmd.Transform),
+                [typeof(IEnumerable<CardTransformation>), typeof(Rng), typeof(CardPreviewStyle)]
+            );
+            MethodInfo newRun = RequiredMember.Method(
+                typeof(RunState), nameof(RunState.CreateForNewRun)
+            );
+            MethodInfo loadRun = RequiredMember.Method(
+                typeof(RunState), nameof(RunState.FromSerializable), [typeof(SerializableRun)]
+            );
+            MethodInfo syncPlayer = RequiredMember.Method(
+                typeof(Player), nameof(Player.SyncWithSerializedPlayer), [typeof(SerializablePlayer)]
+            );
 
-        MethodInfo add = AccessTools.Method(
-            typeof(CardPileCmd),
-            nameof(CardPileCmd.Add),
-            [
-                typeof(IEnumerable<CardModel>),
-                typeof(CardPile),
-                typeof(CardPilePosition),
-                typeof(AbstractModel),
-                typeof(bool),
-            ]
-        ) ?? throw new MissingMethodException(typeof(CardPileCmd).FullName, nameof(CardPileCmd.Add));
-        MethodInfo remove = AccessTools.Method(
-            typeof(CardPileCmd),
-            nameof(CardPileCmd.RemoveFromDeck),
-            [typeof(IReadOnlyList<CardModel>), typeof(bool)]
-        ) ?? throw new MissingMethodException(typeof(CardPileCmd).FullName, nameof(CardPileCmd.RemoveFromDeck));
-        MethodInfo transform = AccessTools.Method(
-            typeof(CardCmd),
-            nameof(CardCmd.Transform),
-            [typeof(IEnumerable<CardTransformation>), typeof(Rng), typeof(CardPreviewStyle)]
-        ) ?? throw new MissingMethodException(typeof(CardCmd).FullName, nameof(CardCmd.Transform));
-        MethodInfo newRun = AccessTools.Method(
-            typeof(RunState), nameof(RunState.CreateForNewRun)
-        ) ?? throw new MissingMethodException(typeof(RunState).FullName, nameof(RunState.CreateForNewRun));
-        MethodInfo loadRun = AccessTools.Method(
-            typeof(RunState), nameof(RunState.FromSerializable), [typeof(SerializableRun)]
-        ) ?? throw new MissingMethodException(typeof(RunState).FullName, nameof(RunState.FromSerializable));
-        MethodInfo syncPlayer = AccessTools.Method(
-            typeof(Player), nameof(Player.SyncWithSerializedPlayer), [typeof(SerializablePlayer)]
-        ) ?? throw new MissingMethodException(typeof(Player).FullName, nameof(Player.SyncWithSerializedPlayer));
-
-        Harmony harmony = new(HarmonyId);
-        harmony.Patch(
-            add,
-            prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(AddPrefix)),
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(AddPostfix))
-        );
-        harmony.Patch(
-            remove,
-            prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RemovePrefix)),
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RemovePostfix))
-        );
-        harmony.Patch(
-            transform,
-            prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(TransformPrefix)),
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(TransformPostfix))
-        );
-        harmony.Patch(
-            newRun,
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RunCreatedPostfix))
-        );
-        harmony.Patch(
-            loadRun,
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RunCreatedPostfix))
-        );
-        harmony.Patch(
-            syncPlayer,
-            postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(PlayerSyncedPostfix))
-        );
-        _initialized = true;
+            harmony.Patch(
+                add,
+                prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(AddPrefix)),
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(AddPostfix))
+            );
+            harmony.Patch(
+                remove,
+                prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RemovePrefix)),
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RemovePostfix))
+            );
+            harmony.Patch(
+                transform,
+                prefix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(TransformPrefix)),
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(TransformPostfix))
+            );
+            harmony.Patch(
+                newRun,
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RunCreatedPostfix))
+            );
+            harmony.Patch(
+                loadRun,
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(RunCreatedPostfix))
+            );
+            harmony.Patch(
+                syncPlayer,
+                postfix: new HarmonyMethod(typeof(CompanionDeckLifecyclePatch), nameof(PlayerSyncedPostfix))
+            );
+        });
     }
 
     internal static void Uninitialize()
     {
-        new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        _initialized = false;
+        Host.Unpatch();
     }
 
     private static void AddPrefix(

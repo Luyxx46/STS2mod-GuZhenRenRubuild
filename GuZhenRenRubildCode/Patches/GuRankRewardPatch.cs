@@ -1,5 +1,7 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -18,39 +20,34 @@ internal static class GuRankRewardPatch
     // HarmonyId 用于隔离本补丁；RngStream 用于从 RitsuLib 获取专属、可复现的玩家随机流。
     private const string HarmonyId = Entry.ModId + ".GuRankReward";
     private const string RngStream = "reward/gu_rank";
-    private static bool _initialized;
+
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     // 在 CardReward.Populate 完成后处理奖励列表，确保原生奖励卡已经全部生成。
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
+            MethodBase populate = RequiredMember.Method(
+                typeof(CardReward),
+                nameof(CardReward.Populate)
+            );
 
-        MethodBase populate = AccessTools.Method(
-            typeof(CardReward),
-            nameof(CardReward.Populate)
-        ) ?? throw new MissingMethodException(
-            typeof(CardReward).FullName,
-            nameof(CardReward.Populate)
-        );
-
-        new Harmony(HarmonyId).Patch(
-            populate,
-            postfix: new HarmonyMethod(
-                typeof(GuRankRewardPatch),
-                nameof(PopulatePostfix)
-            )
-        );
-        _initialized = true;
+            harmony.Patch(
+                populate,
+                postfix: new HarmonyMethod(
+                    typeof(GuRankRewardPatch),
+                    nameof(PopulatePostfix)
+                )
+            );
+        });
     }
 
     // 移除本补丁组，并恢复可再次初始化的状态。
     internal static void Uninitialize()
     {
-        new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        _initialized = false;
+        Host.Unpatch();
     }
 
     // 遍历本次奖励中的卡牌，只对尚未获得初始品阶的蛊牌执行一次随机抽取。

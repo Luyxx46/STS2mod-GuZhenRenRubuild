@@ -2,7 +2,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>
 /// 永久伴生关系的唯一业务入口。Harmony 只负责在生命周期边界调用这里，
@@ -58,26 +58,13 @@ public static class CompanionRelationshipService
             return true;
         }
 
-        companion = null!;
-        if (sourceGu is not ICompanionSourceGuCard ||
-            sourceGu.Owner == null ||
-            CompanionPairState.Get(sourceGu) <= 0)
+        if (sourceGu is not ICompanionSourceGuCard)
         {
+            companion = null!;
             return false;
         }
 
-        int pairId = CompanionPairState.Get(sourceGu);
-        CardModel? found = sourceGu.Owner.Deck.Cards.FirstOrDefault(card =>
-            card is ICompanionCard &&
-            CompanionPairState.Get(card) == pairId
-        );
-        if (found == null)
-        {
-            return false;
-        }
-
-        companion = found;
-        return true;
+        return TryFindDeckPartner<ICompanionCard>(sourceGu, out companion);
     }
 
     public static bool TryGetSource(
@@ -92,26 +79,16 @@ public static class CompanionRelationshipService
             return true;
         }
 
-        sourceGu = null!;
-        if (companion is not ICompanionCard ||
-            companion.Owner == null ||
-            CompanionPairState.Get(companion) <= 0)
+        if (companion is not ICompanionCard)
         {
+            sourceGu = null!;
             return false;
         }
 
-        int pairId = CompanionPairState.Get(companion);
-        CardModel? found = companion.Owner.Deck.Cards.FirstOrDefault(card =>
-            card is ICompanionSourceGuCard &&
-            CompanionPairState.Get(card) == pairId
+        return TryFindDeckPartner<ICompanionSourceGuCard>(
+            companion,
+            out sourceGu
         );
-        if (found == null)
-        {
-            return false;
-        }
-
-        sourceGu = found;
-        return true;
     }
 
     public static bool IsManagedCompanion(CardModel card)
@@ -313,27 +290,40 @@ public static class CompanionRelationshipService
         out CardModel companion
     )
     {
-        companion = null!;
-        if (source.Owner == null)
+        return TryFindDeckPartner<ICompanionCard>(source, out companion);
+    }
+
+    /// <summary>
+    /// 在来源牌所在玩家的永久牌组里，按 PairId 找到同组的另一侧牌。
+    /// 来源牌与伴生牌的互相查找只有标记接口不同，因此共用这一个入口。
+    /// </summary>
+    private static bool TryFindDeckPartner<TMarker>(
+        CardModel anchor,
+        out CardModel partner
+    )
+    {
+        partner = null!;
+
+        if (anchor.Owner == null)
         {
             return false;
         }
 
-        int pairId = CompanionPairState.Get(source);
+        int pairId = CompanionPairState.Get(anchor);
         if (pairId <= 0)
         {
             return false;
         }
 
-        CardModel? found = source.Owner.Deck.Cards.FirstOrDefault(card =>
-            card is ICompanionCard && CompanionPairState.Get(card) == pairId
+        CardModel? found = anchor.Owner.Deck.Cards.FirstOrDefault(
+            card => card is TMarker && CompanionPairState.Get(card) == pairId
         );
         if (found == null)
         {
             return false;
         }
 
-        companion = found;
+        partner = found;
         return true;
     }
 

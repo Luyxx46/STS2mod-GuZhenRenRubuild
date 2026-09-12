@@ -7,5 +7,7 @@
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.empty": "No Gu are waiting.",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.title": "Gu Recovery",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.description": "Gu with no uses left recover here, then join the waiting queue.",
-  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "No Gu are recovering."
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "No Gu are recovering.",
+  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.title": "Yuan Qi",
+  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description": "A separate combat resource spent to activate Gu. Refilled on the first turn of each combat; afterwards it restores every turn by aperture rank. Ranks 1-9: capacity 3/4/4/5/5/7/7/8/9, recovery 1/2/2/2/2/3/3/4/4."
 }

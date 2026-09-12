@@ -1,3 +1,4 @@
+using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Characters;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
@@ -12,10 +13,12 @@ public static class YuanQiSystem
 {
     // LocalId 用于模组内部注册；ResourceId 会由 RitsuLib 加上模组命名空间生成全局唯一编号。
     public const string LocalId = "yuan_qi";
+
+    // 元气图标就是角色能量图标，路径统一由视觉资源常量提供。
     public const string LargeIconPath =
-        $"res://{Entry.ModId}/images/characters/energy_big.png";
+        GuZhenRenRubildAssets.BigEnergyIconPath;
     public const string SmallIconPath =
-        $"res://{Entry.ModId}/images/characters/energy_text.png";
+        GuZhenRenRubildAssets.TextEnergyIconPath;
 
     // 元气转盘使用角色专属场景显示；场景缺失时桥接类会退回程序化图标界面。
     public const string SecondaryCounterScenePath =
@@ -30,18 +33,22 @@ public static class YuanQiSystem
         ModSecondaryResourceRegistry.GetResourceId(Entry.ModId, LocalId);
 
     // 元气默认值为 0，不由框架自动在回合开始恢复，并且只在当前战斗内持久化。
-    // 上限由空窍遗物按当前转数改写（一转 3 ~ 九转 9）；这里的 9 只是九转的硬上限，
-    // 保证即使改写钩子缺席也不会超出已实现曲线的最大值。
+    // 上限由空窍遗物按当前转数改写（一转 3 ~ 九转 9）；hardMaxAmount 取已实现曲线的
+    // 最大容量（九转），保证即使改写钩子缺席也不会超出该曲线的最大值。
     // 文本标题、描述和大小图标均通过本模组资源路径与本地化键提供。
     public static SecondaryResourceDefinition Definition { get; private set; } =
         new(
             defaultAmount: 0,
             baseMaxAmount: 5,
             minAmount: 0,
-            hardMaxAmount: 9,
+            hardMaxAmount: ApertureProgression.MaximumYuanQiCapacity,
             turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
             persistencePolicy: SecondaryResourcePersistencePolicy.Combat,
-            locTable: "secondary_resources",
+            // 悬浮提示文本必须放在"与原版同名"的表里：游戏只会合并这类模组本地化表
+            // （godot.log 中的 "Found loc table from mod: zhs xxx.json"），自建表名
+            // 不会被加载，键名会原样显示在提示框里。static_hover_tips 是原版提示表，
+            // RitsuLib 的牌堆提示与本模组的其余提示键也都在这里。
+            locTable: "static_hover_tips",
             titleKey: "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.title",
             descriptionKey: "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description",
             smallIconPath: SmallIconPath,

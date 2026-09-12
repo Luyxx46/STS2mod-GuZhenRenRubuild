@@ -1,5 +1,7 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards.Companions;
+using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Common.Patching;
+using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Models;
@@ -10,40 +12,37 @@ namespace GuZhenRenRubild.Patches;
 internal static class CompanionMutationProtectionPatch
 {
     private const string HarmonyId = Entry.ModId + ".CompanionMutationProtection";
-    private static bool _initialized;
+
+    // 本补丁组的生命周期（幂等初始化 / 反初始化）由共用 Host 持有，与手写 _initialized 等价。
+    private static readonly HarmonyPatchHost Host = new(HarmonyId);
 
     internal static void Initialize()
     {
-        if (_initialized)
+        Host.TryInitialize(static harmony =>
         {
-            return;
-        }
+            MethodInfo isRemovable = RequiredMember.PropertyGetter(
+                typeof(CardModel), nameof(CardModel.IsRemovable)
+            );
+            MethodInfo removeFromDeck = RequiredMember.Method(
+                typeof(CardPileCmd),
+                nameof(CardPileCmd.RemoveFromDeck),
+                [typeof(IReadOnlyList<CardModel>), typeof(bool)]
+            );
 
-        MethodInfo isRemovable = AccessTools.PropertyGetter(
-            typeof(CardModel), nameof(CardModel.IsRemovable)
-        ) ?? throw new MissingMethodException(typeof(CardModel).FullName, nameof(CardModel.IsRemovable));
-        MethodInfo removeFromDeck = AccessTools.Method(
-            typeof(CardPileCmd),
-            nameof(CardPileCmd.RemoveFromDeck),
-            [typeof(IReadOnlyList<CardModel>), typeof(bool)]
-        ) ?? throw new MissingMethodException(typeof(CardPileCmd).FullName, nameof(CardPileCmd.RemoveFromDeck));
-
-        Harmony harmony = new(HarmonyId);
-        harmony.Patch(
-            isRemovable,
-            postfix: new HarmonyMethod(typeof(CompanionMutationProtectionPatch), nameof(IsRemovablePostfix))
-        );
-        harmony.Patch(
-            removeFromDeck,
-            prefix: new HarmonyMethod(typeof(CompanionMutationProtectionPatch), nameof(RemoveFromDeckPrefix))
-        );
-        _initialized = true;
+            harmony.Patch(
+                isRemovable,
+                postfix: new HarmonyMethod(typeof(CompanionMutationProtectionPatch), nameof(IsRemovablePostfix))
+            );
+            harmony.Patch(
+                removeFromDeck,
+                prefix: new HarmonyMethod(typeof(CompanionMutationProtectionPatch), nameof(RemoveFromDeckPrefix))
+            );
+        });
     }
 
     internal static void Uninitialize()
     {
-        new Harmony(HarmonyId).UnpatchAll(HarmonyId);
-        _initialized = false;
+        Host.Unpatch();
     }
 
     private static void IsRemovablePostfix(CardModel __instance, ref bool __result)

@@ -26,7 +26,8 @@ public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRub
     // 角色名称颜色。
     public override Color NameColor => ThemeColor;
     // 能量图标轮廓颜色。
-    public override Color EnergyLabelOutlineColor => new(0.08f, 0.18f, 0.24f);
+    public override Color EnergyLabelOutlineColor =>
+        GuZhenRenRubildAssets.EnergyOutlineColor;
     // 地图绘制颜色。
     public override Color MapDrawingColor => ThemeColor;
 

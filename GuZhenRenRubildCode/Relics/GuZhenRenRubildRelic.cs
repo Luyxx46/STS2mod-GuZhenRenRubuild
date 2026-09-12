@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Rooms;
 using GuZhenRenRubild.Aperture;
-using GuZhenRenRubild.Cards;
+using GuZhenRenRubild.Cards.Core;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.RestSite;
@@ -35,26 +35,8 @@ public sealed class GuZhenRenRubildRelic
     // 遗物角标显示当前空窍转数。
     public override bool ShowCounter => IsMutable;
 
-    public override int DisplayAmount
-    {
-        get
-        {
-            if (!IsMutable || !ApertureSystem.IsInitialized)
-            {
-                return ApertureProgression.MinimumRank;
-            }
-
-            try
-            {
-                return ApertureSystem.GetState(Owner).Rank;
-            }
-            catch
-            {
-                // 遗物尚未挂到玩家身上时读取会失败，退回初始转数。
-                return ApertureProgression.MinimumRank;
-            }
-        }
-    }
+    // 遗物角标与图标都走同一处转数读取，避免两条路径各写一遍守卫与兜底。
+    public override int DisplayAmount => GetApertureRank();
 
     // 供遗物描述直接引用：当前转数、当前修为、突破所需修为与是否已到九转。
     protected override IEnumerable<DynamicVar> CanonicalVars =>
@@ -187,21 +169,32 @@ public sealed class GuZhenRenRubildRelic
         }
     }
 
-    // 起点遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立"升炼"选项加入篝火。
+    // 起点遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立"升炼"与"合练"选项加入篝火。
+    // 两个选项各自按 OptionId 幂等注入；它们遵循游戏原生规则——每个休息点只能执行一次行动。
     public override bool TryModifyRestSiteOptions(
         Player player,
         ICollection<RestSiteOption> options
     )
     {
         bool modified = base.TryModifyRestSiteOptions(player, options);
-        if (!ReferenceEquals(player, Owner) ||
-            options.Any(option => option.OptionId == GuRankUpRestSiteOption.OptionIdentifier))
+        if (!ReferenceEquals(player, Owner))
         {
             return modified;
         }
 
-        options.Add(new GuRankUpRestSiteOption(player));
-        return true;
+        if (!options.Any(option => option.OptionId == GuRankUpRestSiteOption.OptionIdentifier))
+        {
+            options.Add(new GuRankUpRestSiteOption(player));
+            modified = true;
+        }
+
+        if (!options.Any(option => option.OptionId == GuHeLianRestSiteOption.OptionIdentifier))
+        {
+            options.Add(new GuHeLianRestSiteOption(player));
+            modified = true;
+        }
+
+        return modified;
     }
 
     // 奖励候选为 0 时不展示一个无法选择的空 CardReward。
@@ -278,6 +271,9 @@ public sealed class GuZhenRenRubildRelic
     }
 
     // 读取当前转数；遗物尚未挂到玩家、或运行时未就绪时退回初始转数。
+    // ApertureSystem.GetState 每次都会把转数规范化到
+    // [MinimumRank, MaximumImplementedRank]，因此对调用方而言这里的 clamp
+    // 只是防御性兜底，不改变读取到的数值（角标显示与图标路径共用本方法）。
     private int GetApertureRank()
     {
         if (!IsMutable || !ApertureSystem.IsInitialized)
@@ -295,6 +291,7 @@ public sealed class GuZhenRenRubildRelic
         }
         catch
         {
+            // 遗物尚未挂到玩家身上时读取会失败，退回初始转数。
             return ApertureProgression.MinimumRank;
         }
     }

@@ -1,5 +1,15 @@
 {
   "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.name": "升炼",
   "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.description": "升炼蛊牌。本次共有 2 个升炼槽；六转以下消耗 1 槽，六转及以上消耗 2 槽。",
-  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "选择一张蛊牌升炼，并逐张确认升转预览。"
+  "OPTION_GU_ZHEN_REN_RUBILD_GU_RANK_UP.selectionPrompt": "选择一张蛊牌升炼，并逐张确认升转预览。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.name": "合练",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.description": "先选择一张当前可合成的蛊牌，再选择与目标匹配的蛊虫材料。材料种类和数量完整匹配后才会消耗材料并获得结果；失败不会消耗本次机会。每个休息点只能成功合练一次。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.selectionPrompt": "选择与目标蛊牌匹配的材料，然后点击确认。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.targetSelectionPrompt": "先选择要合成的蛊牌。随后只显示能够匹配该目标的材料。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.successTitle": "合练成功",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.failureTitle": "合练失败",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.success": "{Materials}\n→ [gold]{Result}[/gold]\n\n结果转数：{Rank} 转",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.noRecipe": "当前牌组中没有能够完成的合练配方。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.unmatchedMaterials": "所选材料无法合练：\n{Materials}\n\n请检查材料种类和数量。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.exception": "合练执行时发生异常，材料与牌组记录已尝试恢复。\n\n{Message}"
 }

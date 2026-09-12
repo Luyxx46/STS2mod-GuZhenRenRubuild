@@ -7,5 +7,7 @@
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_STORAGE.empty": "蛊待命堆为空。",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.title": "蛊冷却堆",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.description": "催动次数耗尽的蛊在这里冷却；恢复完成后进入待命队列。",
-  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "蛊冷却堆为空。"
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "蛊冷却堆为空。",
+  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.title": "元气",
+  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description": "催动蛊牌使用的独立战斗资源。每场战斗首回合补满；之后每回合按空窍转数恢复。一至九转：上限 3/4/4/5/5/7/7/8/9，每回合回复 1/2/2/2/2/3/3/4/4。"
 }

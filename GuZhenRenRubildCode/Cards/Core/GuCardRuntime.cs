@@ -4,7 +4,7 @@ using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Utils;
 
-namespace GuZhenRenRubild.Cards;
+namespace GuZhenRenRubild.Cards.Core;
 
 /// <summary>
 /// 保存每张蛊牌在当前战斗中的使用次数与恢复回合，并提供统一的激活资格判断。

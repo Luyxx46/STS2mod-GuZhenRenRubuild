@@ -25,6 +25,13 @@ public static class ApertureProgression
     public const int MaximumImplementedRank = 9;
 
     /// <summary>
+    /// 元气容量的最大值，即九转（<see cref="MaximumImplementedRank"/>）对应的容量。
+    /// 供副资源定义用作 hardMaxAmount：即使遗物改写上限的钩子缺席，也不会超出已实现曲线。
+    /// 必须与 <see cref="YuanQiCapacityByRank"/> 的最大值（即 [9] = 9）保持一致。
+    /// </summary>
+    public const int MaximumYuanQiCapacity = 9;
+
+    /// <summary>
     /// 各转数突破所需的修为。九转为终点，无需再突破。
     /// </summary>
     private static readonly IReadOnlyDictionary<int, int> RequiredXpByRank =
@@ -151,7 +158,7 @@ public static class ApertureProgression
         data.Rank++;
 
         // 五转进入仙窍，以及仙窍阶段之间的突破，都从新阶段的 0 点进度开始。
-        data.Xp = previousRank >= 5 ? 0 : overflow;
+        data.Xp = previousRank >= ImmortalRank - 1 ? 0 : overflow;
 
         if (data.Rank >= MaximumImplementedRank)
         {
