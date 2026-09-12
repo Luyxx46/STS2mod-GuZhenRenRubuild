@@ -1,5 +1,5 @@
 {
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "一转空窍",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "战斗开始时拥有 [blue]5[/blue] 点元气。此后每回合恢复 [blue]2[/blue] 点元气。",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "窍中元海翻涌，蛊虫随念而动。"
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "空窍",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "战斗胜利后获得修为，修为足够时提升转数。转数决定每场战斗的元气上限与回复量。当前 [blue]{Rank}[/blue] 转，修为 [blue]{CurrentXp}[/blue]/{RequiredXp}。",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "窍中自有天地，念起可炼众生。"
 }

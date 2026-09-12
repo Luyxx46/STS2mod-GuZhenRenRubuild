@@ -1,5 +1,5 @@
 {
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "Rank One Aperture",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "Start combat with [blue]5[/blue] Yuan Qi. Restore [blue]2[/blue] Yuan Qi each subsequent turn.",
-  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "The primeval sea surges; Gu answer the mind."
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.title": "Aperture",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.description": "Gain cultivation from combat victories; enough cultivation advances your aperture rank. Rank sets your Yuan Qi maximum and recovery in combat. Currently rank [blue]{Rank}[/blue], cultivation [blue]{CurrentXp}[/blue]/{RequiredXp}.",
+  "GU_ZHEN_REN_RUBILD_RELIC_GU_ZHEN_REN_RUBILD_RELIC.flavor": "A world unto itself within the aperture; a single thought refines all beings."
 }

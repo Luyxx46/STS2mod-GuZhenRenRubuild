@@ -1,6 +1,4 @@
-using Godot;
 using GuZhenRenRubild.Characters;
-using MegaCrit.Sts2.Core.Nodes.Combat;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Godot.NodeAttachments;
 
@@ -19,16 +17,9 @@ public static class YuanQiSystem
     public const string SmallIconPath =
         $"res://{Entry.ModId}/images/characters/energy_text.png";
 
-    // 元气计数器的尺寸、图标、字体和增长动画样式。
-    private static readonly SecondaryResourceCounterStyle CounterStyle =
-        SecondaryResourceCounterStyle.Default with
-        {
-            CounterSize = new Vector2(52f, 52f),
-            IconSize = new Vector2(46f, 46f),
-            FontSize = 20,
-            OutlineSize = 4,
-            AnimateAmountGain = true,
-        };
+    // 元气转盘使用角色专属场景显示；场景缺失时桥接类会退回程序化图标界面。
+    public const string SecondaryCounterScenePath =
+        $"res://{Entry.ModId}/scenes/ui/nodes/GuZhenRenRubild_yuanqi_counter.tscn";
 
     // 资源注册只能执行一次，锁用于防止不同初始化入口并发注册。
     private static readonly object SyncRoot = new();
@@ -38,14 +29,16 @@ public static class YuanQiSystem
     public static string ResourceId =>
         ModSecondaryResourceRegistry.GetResourceId(Entry.ModId, LocalId);
 
-    // 元气默认值为 0、上限为 5，不由框架自动在回合开始恢复，并且只在当前战斗内持久化。
+    // 元气默认值为 0，不由框架自动在回合开始恢复，并且只在当前战斗内持久化。
+    // 上限由空窍遗物按当前转数改写（一转 3 ~ 九转 9）；这里的 9 只是九转的硬上限，
+    // 保证即使改写钩子缺席也不会超出已实现曲线的最大值。
     // 文本标题、描述和大小图标均通过本模组资源路径与本地化键提供。
     public static SecondaryResourceDefinition Definition { get; private set; } =
         new(
             defaultAmount: 0,
             baseMaxAmount: 5,
             minAmount: 0,
-            hardMaxAmount: 5,
+            hardMaxAmount: 9,
             turnStartPolicy: SecondaryResourceTurnStartPolicy.None,
             persistencePolicy: SecondaryResourcePersistencePolicy.Combat,
             locTable: "secondary_resources",
@@ -69,14 +62,25 @@ public static class YuanQiSystem
                 ModSecondaryResourceRegistry.For(Entry.ModId);
             // Register 可能返回框架规范化后的定义，因此用返回值覆盖本地缓存。
             Definition = registry.Register(LocalId, Definition);
-            registry.RegisterCombatUi<NSecondaryResourceCounter>(
+            registry.RegisterCombatUi<YuanQiEnergyCounter>(
                 LocalId,
-                static _ => NSecondaryResourceCounter.Create(Definition, CounterStyle),
+                static _ => YuanQiEnergyCounter.Create(
+                    Definition,
+                    SecondaryCounterScenePath
+                ),
                 static context =>
                 {
                     // 节点创建后先绑定对应玩家，再移动到原生能量计数器旁边。
                     context.Node.Bind(context.Player);
-                    AttachBesideEnergy(context.Node, context.Parent);
+
+                    // 节点挂载注册会作用于所有角色的战斗界面；只有本模组
+                    // 角色才把元气表定位到原生能量表右上方，避免影响其他角色。
+                    if (context.Player?.Character is GuZhenRenRubildCharacter)
+                    {
+                        context.Node.AttachBesideNativeEnergyCounter(
+                            context.Parent
+                        );
+                    }
                 },
                 static context => context.Node.Refresh(context.Player),
                 new NodeAttachmentOptions
@@ -95,27 +99,5 @@ public static class YuanQiSystem
     public static void Uninitialize()
     {
         // RitsuLib 的副资源与界面注册在整个进程内有效，目前不需要也不应重复反注册。
-    }
-
-    // 优先把元气计数器挂到原生能量计数器节点下；如果未找到原生计数器，则退回能量容器作为锚点。
-    private static void AttachBesideEnergy(
-        NSecondaryResourceCounter counter,
-        NCombatUi combatUi
-    )
-    {
-        NEnergyCounter? nativeCounter = combatUi.EnergyCounterContainer
-            .GetChildren()
-            .OfType<NEnergyCounter>()
-            .FirstOrDefault();
-        Node anchor = nativeCounter ?? combatUi.EnergyCounterContainer;
-
-        // 仅在父节点确实不一致时重挂，避免无意义的节点树操作。
-        if (!ReferenceEquals(counter.GetParent(), anchor))
-        {
-            counter.Reparent(anchor, keepGlobalTransform: false);
-        }
-
-        // 使用固定偏移把元气计数器放到原生能量球右上侧，避免与原界面重叠。
-        counter.Position = new Vector2(96f, -102f);
     }
 }

@@ -55,13 +55,14 @@ pivot_offset = Vector2(64, 64)
 mouse_filter = 2
 
 [node name="layer2" type="TextureRect" parent="Layers/RotationLayers"]
+self_modulate = Color(0.9063318, 1, 1, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-rotation = -2.8314316
+rotation = -0.33654046
 pivot_offset = Vector2(64, 64)
 mouse_filter = 2
 texture = ExtResource("3_5un6y")
@@ -69,13 +70,14 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="layer3" type="TextureRect" parent="Layers/RotationLayers"]
+self_modulate = Color(0.9063318, 1, 1, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-rotation = 2.8314435
+rotation = 0.33652854
 pivot_offset = Vector2(64, 64)
 mouse_filter = 2
 texture = ExtResource("4_oc1w5")
@@ -83,13 +85,14 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="layer4" type="TextureRect" parent="Layers/RotationLayers"]
+modulate = Color(0.9063318, 1, 1, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-rotation = 1.725971
+rotation = 2.9769819
 pivot_offset = Vector2(64, 64)
 mouse_filter = 2
 texture = ExtResource("5_hlugp")
@@ -97,13 +100,14 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="layer5" type="TextureRect" parent="Layers/RotationLayers"]
+self_modulate = Color(0.9063318, 1, 1, 1)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-rotation = -0.6203635
+rotation = 0.6721761
 pivot_offset = Vector2(64, 64)
 mouse_filter = 2
 texture = ExtResource("6_vo3o1")

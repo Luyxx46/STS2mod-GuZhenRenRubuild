@@ -69,7 +69,9 @@
         <Folder Include="GuZhenRenRubild\images\cards\"/>
         <Folder Include="GuZhenRenRubild\images\characters\"/>
         <Folder Include="GuZhenRenRubild\images\relics\"/>
+        <Folder Include="GuZhenRenRubild\images\ui\"/>
         <Folder Include="GuZhenRenRubild\scenes\characters\"/>
+        <Folder Include="GuZhenRenRubild\scenes\ui\nodes\"/>
     </ItemGroup>
 
     <!-- 在解析程序集引用前验证游戏安装目录，尽早给出缺少 sts2.dll 的明确错误。 -->

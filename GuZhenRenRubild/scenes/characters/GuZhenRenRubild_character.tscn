@@ -1,32 +1,38 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_select.png" id="1_character"]
+[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_idle.png" id="1_idle"]
+[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_shadow.png" id="2_shadow"]
 
 [node name="GuZhenRenRubildCharacter" type="Node2D"]
 
+[node name="Shadow" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(-10, -192)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("2_shadow")
+
 [node name="Visuals" type="Sprite2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(0, -92)
-scale = Vector2(1.25, 1.25)
-texture = ExtResource("1_character")
+position = Vector2(0, -192)
+scale = Vector2(0.25, 0.25)
+texture = ExtResource("1_idle")
 
 [node name="Bounds" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 3
 anchors_preset = 0
-offset_left = -82.0
-offset_top = -214.0
-offset_right = 82.0
-offset_bottom = 14.0
+offset_left = -80.0
+offset_top = -325.0
+offset_right = 80.0
 
 [node name="IntentPos" type="Marker2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(24, -224)
+position = Vector2(25, -335)
 
 [node name="CenterPos" type="Marker2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(0, -96)
+position = Vector2(0, -160)
 
 [node name="TalkPos" type="Marker2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(0, -184)
+position = Vector2(0, -285)

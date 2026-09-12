@@ -3,13 +3,15 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Rooms;
+using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.RestSite;
 using MegaCrit.Sts2.Core.Entities.RestSite;
 using MegaCrit.Sts2.Core.Rewards;
-using MegaCrit.Sts2.Core.Rooms;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
@@ -18,22 +20,74 @@ namespace GuZhenRenRubild.Relics;
 
 // RegisterRelic 将遗物注册进角色专属遗物池。
 // RegisterCharacterStarterRelic 将它设为该角色的初始遗物；蛊牌的打出后归位和元气回合恢复都由此遗物挂接原生时机。
+// 同时它也是"空窍"本体的载体：承载 1～9 转状态、驱动元气上限与每回合恢复，并按转数切换图标。
 [RegisterRelic(typeof(GuZhenRenRubildRelicPool))]
 [RegisterCharacterStarterRelic(typeof(GuZhenRenRubildCharacter))]
-public sealed class GuZhenRenRubildRelic : ModRelicTemplate
+public sealed class GuZhenRenRubildRelic
+    : ModRelicTemplate, ISecondaryResourceHookListener
 {
+    // 记录已经画到界面上的转数，只有转数变化时才请求重载图标。
+    private int _lastVisualRank = -1;
+
     // 稀有度。
     public override RelicRarity Rarity => RelicRarity.Common;
 
+    // 遗物角标显示当前空窍转数。
+    public override bool ShowCounter => IsMutable;
+
+    public override int DisplayAmount
+    {
+        get
+        {
+            if (!IsMutable || !ApertureSystem.IsInitialized)
+            {
+                return ApertureProgression.MinimumRank;
+            }
+
+            try
+            {
+                return ApertureSystem.GetState(Owner).Rank;
+            }
+            catch
+            {
+                // 遗物尚未挂到玩家身上时读取会失败，退回初始转数。
+                return ApertureProgression.MinimumRank;
+            }
+        }
+    }
+
+    // 供遗物描述直接引用：当前转数、当前修为、突破所需修为与是否已到九转。
+    protected override IEnumerable<DynamicVar> CanonicalVars =>
+        base.CanonicalVars.Concat(
+            [
+                new IntVar("Rank", ApertureProgression.MinimumRank),
+                new IntVar("CurrentXp", 0),
+                new IntVar(
+                    "RequiredXp",
+                    ApertureProgression.GetRequiredXp(
+                        ApertureProgression.MinimumRank
+                    )
+                ),
+                new IntVar("CultivationComplete", 0),
+            ]
+        );
+
     // 图片资源统一放在 AssetProfile 里配置。
-    // 三个路径可以先指向同一张图。后续有高清图或轮廓图时再拆开。
-    public override RelicAssetProfile AssetProfile => new(
-        // 小图标（原版 85x85）。
-        IconPath: $"{Entry.ResPath}/images/relics/{GetType().Name}.png",
-        // 轮廓图标（原版 85x85）。
-        IconOutlinePath: $"{Entry.ResPath}/images/relics/{GetType().Name}.png",
-        // 大图标（原版 256x256）。
-        BigIconPath: $"{Entry.ResPath}/images/relics/{GetType().Name}.png");
+    // 图标按当前转数切换为 images/relics/GuZhenRenRubildRelic<转数>.png；
+    // 轮廓图不单独提供，交给模板回退。
+    public override RelicAssetProfile AssetProfile
+    {
+        get
+        {
+            string iconPath =
+                $"{Entry.ResPath}/images/relics/" +
+                $"{GetType().Name}{GetApertureRank()}.png";
+
+            return new RelicAssetProfile(
+                IconPath: iconPath,
+                BigIconPath: iconPath);
+        }
+    }
 
     // 蛊牌正式结算前处理激活登记。只响应本遗物持有者的蛊牌，并且一组连锁打出只处理第一张，避免重复计数。
     public override async Task BeforeCardPlayed(CardPlay cardPlay)
@@ -84,7 +138,16 @@ public sealed class GuZhenRenRubildRelic : ModRelicTemplate
         await GuCardPileSystem.RefillActiveAsync(Owner, skipVisuals: false);
     }
 
-    // 原生能量重置后执行每回合蛊牌维护：先恢复到期蛊牌，再补充元气。
+    // 战斗胜利后结算空窍修为：普通/精英/首领战分别提供不同修为，修为足够时提升转数。
+    public override async Task AfterCombatVictory(CombatRoom room)
+    {
+        await base.AfterCombatVictory(room);
+
+        // 空窍运行时在遗物所属玩家身上推进转数，并补发六转起的最大生命奖励。
+        await ApertureSystem.HandleCombatVictoryAsync(Owner, room);
+    }
+
+    // 原生能量重置后执行每回合蛊牌维护：先恢复到期蛊牌，再按空窍转数补充元气。
     public override async Task AfterEnergyReset(Player player)
     {
         await base.AfterEnergyReset(player);
@@ -98,23 +161,33 @@ public sealed class GuZhenRenRubildRelic : ModRelicTemplate
         int turn = player.PlayerCombatState.TurnNumber;
         await GuCardPileSystem.RestoreRecoveredCardsAsync(player, turn);
 
+        int rank = GetApertureRank();
         int current = SecondaryResourceCmd.Get(player, YuanQiSystem.ResourceId);
         int maximum = SecondaryResourceCmd.GetMax(player, YuanQiSystem.ResourceId)
             ?? YuanQiSystem.Definition.HardMaxAmount;
-        // 第 1 回合直接补满元气；之后每回合恢复 2 点，但绝不超过当前资源上限。
-        int target = turn <= 1 ? maximum : Math.Min(maximum, current + 2);
 
-        if (target != current)
+        // 第 1 回合直接补满至当前转数上限；之后每回合按转数恢复，但不超过当前资源上限。
+        int target = turn <= 1
+            ? ApertureProgression.GetYuanQiStartAmount(rank)
+            : current + ApertureProgression.GetYuanQiRecovery(rank);
+        int clamped = Math.Clamp(
+            target,
+            YuanQiSystem.Definition.MinAmount,
+            maximum
+        );
+
+        if (clamped != current)
         {
             await SecondaryResourceCmd.Set(
                 player,
                 YuanQiSystem.ResourceId,
-                target,
+                clamped,
                 source: this
             );
         }
     }
-    // 起始遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立“升炼”选项加入篝火。
+
+    // 起点遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立"升炼"选项加入篝火。
     public override bool TryModifyRestSiteOptions(
         Player player,
         ICollection<RestSiteOption> options
@@ -150,4 +223,79 @@ public sealed class GuZhenRenRubildRelic : ModRelicTemplate
         return modified || removed > 0;
     }
 
+    // 获得遗物后立即把转数与图标同步到界面。
+    public override Task AfterObtained()
+    {
+        ApertureSystem.RefreshRelicVisualState(Owner);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 元气上限随空窍转数变化：一至九转依次为 3、4、4、5、5、7、7、8、9。
+    /// </summary>
+    public decimal ModifyMaxSecondaryResource(
+        SecondaryResourceMaxContext context,
+        decimal amount
+    )
+    {
+        if (!ReferenceEquals(context.Player, Owner) ||
+            !string.Equals(
+                context.Definition.Id,
+                YuanQiSystem.ResourceId,
+                StringComparison.Ordinal
+            ))
+        {
+            return amount;
+        }
+
+        return ApertureProgression.GetYuanQiCapacity(GetApertureRank());
+    }
+
+    /// <summary>
+    /// 由空窍运行时在转数变化或数据恢复后调用，刷新图标与描述数值。
+    /// </summary>
+    internal void RefreshApertureVisualState(ApertureRunData data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        AssertMutable();
+
+        Status = RelicStatus.Normal;
+
+        if (_lastVisualRank != data.Rank)
+        {
+            _lastVisualRank = data.Rank;
+            RelicIconChanged();
+        }
+
+        DynamicVars["Rank"].BaseValue = data.Rank;
+        DynamicVars["CurrentXp"].BaseValue = data.Xp;
+        DynamicVars["RequiredXp"].BaseValue =
+            ApertureProgression.GetRequiredXp(data.Rank);
+        DynamicVars["CultivationComplete"].BaseValue =
+            data.IsCultivationComplete ? 1 : 0;
+
+        InvokeDisplayAmountChanged();
+    }
+
+    // 读取当前转数；遗物尚未挂到玩家、或运行时未就绪时退回初始转数。
+    private int GetApertureRank()
+    {
+        if (!IsMutable || !ApertureSystem.IsInitialized)
+        {
+            return ApertureProgression.MinimumRank;
+        }
+
+        try
+        {
+            return Math.Clamp(
+                ApertureSystem.GetState(Owner).Rank,
+                ApertureProgression.MinimumRank,
+                ApertureProgression.MaximumImplementedRank
+            );
+        }
+        catch
+        {
+            return ApertureProgression.MinimumRank;
+        }
+    }
 }

@@ -1,6 +1,7 @@
 using System.Reflection;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
+using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.Patches;
@@ -28,6 +29,8 @@ public partial class Entry
     [
         new(nameof(GuCardPileSystem), GuCardPileSystem.Initialize, GuCardPileSystem.Uninitialize),
         new(nameof(YuanQiSystem), YuanQiSystem.Initialize, YuanQiSystem.Uninitialize),
+        // 空窍运行时负责转数与修为的跨存档/联机持久化，必须早于依赖它的遗物钩子就绪。
+        new(nameof(ApertureSystem), ApertureSystem.Initialize, ApertureSystem.Uninitialize),
         new(nameof(CompanionDeckLifecyclePatch), CompanionDeckLifecyclePatch.Initialize, CompanionDeckLifecyclePatch.Uninitialize),
         new(nameof(CompanionMutationProtectionPatch), CompanionMutationProtectionPatch.Initialize, CompanionMutationProtectionPatch.Uninitialize),
         new(nameof(GuCardRewardPatch), GuCardRewardPatch.Initialize, GuCardRewardPatch.Uninitialize),

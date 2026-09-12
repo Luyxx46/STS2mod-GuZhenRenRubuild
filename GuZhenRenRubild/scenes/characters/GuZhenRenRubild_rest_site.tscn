@@ -1,19 +1,19 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_select.png" id="1_character"]
+[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_idle.png" id="1_idle"]
+[ext_resource type="Texture2D" path="res://GuZhenRenRubild/images/characters/GuZhenRenRubild_character_shadow.png" id="2_shadow"]
 
 [node name="GuZhenRenRubildCharacterRestSite" type="Node2D"]
 
 [node name="Visuals" type="Sprite2D" parent="."]
 position = Vector2(0, -96)
-scale = Vector2(1.25, 1.25)
-texture = ExtResource("1_character")
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("1_idle")
 
 [node name="Shadow" type="Sprite2D" parent="."]
-position = Vector2(75, -58)
-scale = Vector2(0.75, 0.75)
 modulate = Color(0.25, 0.25, 0.25, 0.45)
-texture = ExtResource("1_character")
+position = Vector2(-25, -20)
+texture = ExtResource("2_shadow")
 
 [node name="ControlRoot" type="Control" parent="."]
 unique_name_in_owner = true

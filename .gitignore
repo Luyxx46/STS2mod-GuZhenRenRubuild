@@ -13,3 +13,9 @@ local.props
 *.log
 
 .GuZhenRenRebuild.zip
+
+# ---- 含本机信息（磁盘绝对路径 / 用户目录）的文件，不入库 ----
+# 本机 DSH 配置与项目级 skill：正文含本机 Steam 库、Godot 可执行文件等路径
+.dsh/
+# VS Code 个人设置：写死了本机 Godot 编辑器路径（godotTools.editorPath.godot4）
+.vscode/settings.json
