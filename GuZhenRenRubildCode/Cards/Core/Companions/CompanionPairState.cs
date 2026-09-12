@@ -1,7 +1,7 @@
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Utils;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>
 /// 永久配对身份。网络 ID 仅用于运行时映射，绝不写入存档。

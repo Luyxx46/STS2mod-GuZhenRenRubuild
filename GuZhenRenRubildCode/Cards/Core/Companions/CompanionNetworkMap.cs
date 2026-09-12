@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>
 /// PairId 是持久身份；DeckIndex / CombatCardId 只缓存在当前运行时作用域。

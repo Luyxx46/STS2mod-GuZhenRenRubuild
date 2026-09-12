@@ -1,6 +1,6 @@
 using GuZhenRenRubild.Common.Scoping;
 
-namespace GuZhenRenRubild.Cards.Companions;
+namespace GuZhenRenRubild.Cards.Core.Companions;
 
 /// <summary>
 /// 只供关系系统执行级联创建/删除时绕过玩家侧保护。AsyncLocal 支持异步与嵌套调用。
