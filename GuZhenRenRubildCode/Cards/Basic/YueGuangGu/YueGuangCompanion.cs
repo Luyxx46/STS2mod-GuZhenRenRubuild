@@ -1,5 +1,5 @@
 using GuZhenRenRubild.Cards.Core;
-using GuZhenRenRubild.Cards.Gu;
+using GuZhenRenRubild.Cards.Core.Companions;
 using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -8,13 +8,15 @@ using MegaCrit.Sts2.Core.ValueProps;
 using STS2RitsuLib.Interop.AutoRegistration;
 using STS2RitsuLib.Scaffolding.Content;
 
-namespace GuZhenRenRubild.Cards.Core.Companions;
+namespace GuZhenRenRubild.Cards.Basic.YueGuangGu;
 
 /// <summary>月光蛊的验证用永久伴生普通牌。</summary>
 [RegisterCard(typeof(GuZhenRenRubildCardPool))]
 public sealed class YueGuangCompanion : AbstractCompanionCard
 {
-    public override Type SourceGuType => typeof(YueGuangGu);
+    // 目录名与来源蛊类名同为 YueGuangGu，命名空间因此与类型同名，必须用 global:: 全限定名引用。
+    public override Type SourceGuType =>
+        typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangGu);
 
     public override CardAssetProfile AssetProfile => new(
         PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildStrike.png"

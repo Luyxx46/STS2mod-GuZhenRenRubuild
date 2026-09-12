@@ -13,8 +13,12 @@ namespace GuZhenRenRubild.Cards.Gu.HeLian;
 
 // 月影蛊：由两张月光蛊，或血煞蛊配铁甲蛊合练而成。
 // 结果转数沿用默认策略，取全部材料中的最高转数。
+// 月光蛊位于 Cards/Basic（目录名与类名同名），命名空间与类型同名，因此用 global:: 全限定名引用。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
-[HeLianRecipe(typeof(YueGuangGu), typeof(YueGuangGu))]
+[HeLianRecipe(
+    typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangGu),
+    typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangGu)
+)]
 [HeLianRecipe(typeof(XueShaGu), typeof(TieJiaGu), MinimumMaterialRank = 2)]
 public sealed class YueYingGu : AbstractHeLianGuCard
 {

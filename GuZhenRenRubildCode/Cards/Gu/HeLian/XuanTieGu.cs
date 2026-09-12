@@ -12,8 +12,12 @@ using STS2RitsuLib.Scaffolding.Content;
 namespace GuZhenRenRubild.Cards.Gu.HeLian;
 
 // 玄铁蛊：由玉皮蛊配铁甲蛊合练而成，是防御向的合练结果。
+// 玉皮蛊位于 Cards/Basic（目录名与类名同名），命名空间与类型同名，因此用 global:: 全限定名引用。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
-[HeLianRecipe(typeof(YuPiGu), typeof(TieJiaGu))]
+[HeLianRecipe(
+    typeof(global::GuZhenRenRubild.Cards.Basic.YuPiGu.YuPiGu),
+    typeof(TieJiaGu)
+)]
 public sealed class XuanTieGu : AbstractHeLianGuCard
 {
     protected override IEnumerable<DynamicVar> CanonicalVars =>
