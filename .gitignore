@@ -14,6 +14,9 @@ local.props
 
 .GuZhenRenRebuild.zip
 
+# 发布安装包与打包中间产物（由 version-release skill 生成，不入库）
+artifacts/
+
 # ---- 含本机信息（磁盘绝对路径 / 用户目录）的文件，不入库 ----
 # 本机 DSH 配置与项目级 skill：正文含本机 Steam 库、Godot 可执行文件等路径
 .dsh/
