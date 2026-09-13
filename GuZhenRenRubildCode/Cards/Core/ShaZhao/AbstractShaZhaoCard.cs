@@ -392,33 +392,4 @@ public abstract class AbstractShaZhaoCard : ModCardTemplate
         );
     }
 
-    /// <summary>
-    /// 主动解体（右键）：1 费，材料返回并额外增加 1 回合恢复。
-    /// </summary>
-    internal async Task<bool> TryDismantleAsync(
-        PlayerChoiceContext choiceContext,
-        Player player
-    )
-    {
-        if (!HasBoundMaterials ||
-            player.PlayerCombatState is not { } combatState ||
-            combatState.Energy < 1m)
-        {
-            return false;
-        }
-
-        await PlayerCmd.LoseEnergy(1, player);
-        await ShaZhaoBindingService.FinalizeAsync(
-            this,
-            player,
-            ShaZhaoBindingService.FinalizeReason.Dismantled
-        );
-        await CardCmd.Exhaust(
-            choiceContext,
-            this,
-            causedByEthereal: false,
-            skipVisuals: false
-        );
-        return true;
-    }
 }

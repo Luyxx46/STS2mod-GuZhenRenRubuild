@@ -15,28 +15,25 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
 using STS2RitsuLib.Combat.SecondaryResources;
-using STS2RitsuLib.Interactions.RightClick;
 
 namespace GuZhenRenRubild.Cards.Core.ShaZhao;
 
 /// <summary>
-/// 杀招推演与主动解体。
+/// 杀招推演。
 ///
 /// 推演入口是"杀招推演"系统牌：先选目标杀招，再选与该目标匹配的材料，
 /// 材料与元气都满足时才封装材料并生成杀招。取消或失败不消耗任何资源，
 /// 材料留在蛊牌堆。
 ///
-/// 主动解体绑定在手牌中已绑定材料的杀招上（右键，1 费）：材料返回并额外
-/// 增加 1 回合恢复，随后杀招消耗。
+/// 材料只在"正常用完"或"杀招被异常移出战斗"时返还（见
+/// <see cref="ShaZhaoBindingService.FinalizeAsync"/>）：**玩家侧没有主动解体入口**。
 /// </summary>
 internal static class ShaZhaoTuiYanSystem
 {
     // 推演界面的提示与失败原因都放在原版提示表中，键名统一带本模组前缀。
     private const string LocTable = "static_hover_tips";
     private const string LocKeyPrefix = "GU_ZHEN_REN_RUBILD_SHA_ZHAO.";
-    private const string DismantleHandlerId = "sha_zhao_dismantle";
 
-    private static IDisposable? _dismantleBinding;
     private static bool _initialized;
 
     internal static void Initialize()
@@ -46,22 +43,14 @@ internal static class ShaZhaoTuiYanSystem
             return;
         }
 
-        // 右键解体：只有手牌中仍绑定材料的杀招可以解体，且需要 1 点能量。
-        _dismantleBinding = ModRightClickRegistry.Register<CardModel>(
-            Entry.ModId,
-            DismantleHandlerId,
-            static context => CanDismantle(context),
-            static context => DismantleAsync(context),
-            priority: 100
-        );
-
+        // 本系统目前没有任何需要注册的入口（右键解体已移除），
+        // 保留这一对方法只是维持 Entry.RuntimeComponents 的组件契约，
+        // 后续若再挂新入口（例如新的选牌流程）在这里登记即可。
         _initialized = true;
     }
 
     internal static void Uninitialize()
     {
-        _dismantleBinding?.Dispose();
-        _dismantleBinding = null;
         _initialized = false;
     }
 
@@ -406,33 +395,6 @@ internal static class ShaZhaoTuiYanSystem
         ICombatState? combatState = shaZhao.CombatState;
         shaZhao.RemoveFromState();
         combatState?.RemoveCard(shaZhao);
-    }
-
-    // =================================================================
-    //  主动解体
-    // =================================================================
-
-    private static bool CanDismantle(ModRightClickContext context)
-    {
-        return context.Model is AbstractShaZhaoCard shaZhao &&
-            shaZhao.HasBoundMaterials &&
-            shaZhao.Pile?.Type == PileType.Hand &&
-            context.Player.PlayerCombatState is { } combatState &&
-            combatState.Energy >= 1m;
-    }
-
-    private static async Task DismantleAsync(
-        ModRightClickExecutionContext context
-    )
-    {
-        if (context.Model is not AbstractShaZhaoCard shaZhao ||
-            context.Player is not { } player ||
-            context.PlayerChoiceContext is not { } choiceContext)
-        {
-            return;
-        }
-
-        await shaZhao.TryDismantleAsync(choiceContext, player);
     }
 
     // =================================================================

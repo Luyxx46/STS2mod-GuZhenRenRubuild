@@ -43,9 +43,6 @@ internal static class ShaZhaoBindingService
         /// <summary>正常用完。</summary>
         Completed,
 
-        /// <summary>玩家主动解体。</summary>
-        Dismantled,
-
         /// <summary>杀招被其他效果异常移出战斗。</summary>
         AbnormalRemoval,
 
@@ -221,7 +218,7 @@ internal static class ShaZhaoBindingService
         if (material.Pile?.Type != GuCardPileSystem.SealedPileType)
         {
             // 移动没有生效：撤销绑定记录，避免杀招留下"计数大于零却找不到材料"
-            // 的状态（那会让主动解体白扣 1 点能量）。
+            // 的状态（那会让后续的收口与返还对着不存在的材料空转）。
             ClearMaterialBinding(material);
             BoundMaterialCountState[shaZhao] = Math.Max(
                 0,
@@ -236,7 +233,7 @@ internal static class ShaZhaoBindingService
     /// <summary>
     /// 收口一次杀招绑定。
     ///
-    /// 正常用完、主动解体或异常移出会让材料从零开始完整冷却并额外延后一回合；
+    /// 正常用完或异常移出会让材料从零开始完整冷却并额外延后一回合；
     /// 战斗结束只清理战斗期绑定记录，材料留在原地交给游戏的战斗牌堆回收流程。
     ///
     /// 战斗结束时即使材料是"永久封存"也必须解绑，否则绑定状态会跨战斗残留，
