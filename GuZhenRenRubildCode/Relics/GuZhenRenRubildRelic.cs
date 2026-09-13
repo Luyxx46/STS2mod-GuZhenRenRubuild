@@ -260,7 +260,8 @@ public sealed class GuZhenRenRubildRelic
     }
 
     /// <summary>
-    /// 元气上限随空窍转数变化：一至九转依次为 3、4、4、5、5、7、7、8、9。
+    /// 元气上限随空窍转数变化：一至九转依次为 3、4、4、5、5、6、6、6、6
+    /// （六转进入仙窍后不再提升）。
     /// </summary>
     public decimal ModifyMaxSecondaryResource(
         SecondaryResourceMaxContext context,

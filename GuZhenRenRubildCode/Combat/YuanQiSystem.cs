@@ -33,8 +33,8 @@ public static class YuanQiSystem
         ModSecondaryResourceRegistry.GetResourceId(Entry.ModId, LocalId);
 
     // 元气默认值为 0，不由框架自动在回合开始恢复，并且只在当前战斗内持久化。
-    // 上限由空窍遗物按当前转数改写（一转 3 ~ 九转 9）；hardMaxAmount 取已实现曲线的
-    // 最大容量（九转），保证即使改写钩子缺席也不会超出该曲线的最大值。
+    // 上限由空窍遗物按当前转数改写（一转 3 ~ 六转 6，六转进入仙窍后不再提升）；
+    // hardMaxAmount 取已实现曲线的最大容量（六转 = 6），保证即使改写钩子缺席也不会超出该曲线的最大值。
     // 文本标题、描述和大小图标均通过本模组资源路径与本地化键提供。
     public static SecondaryResourceDefinition Definition { get; private set; } =
         new(

@@ -23,5 +23,5 @@
   "GU_ZHEN_REN_RUBILD_SHA_ZHAO.creationFailed": "当前战斗状态无法创建杀招。费用未消耗，所选蛊虫已保留在蛊牌堆。",
   "GU_ZHEN_REN_RUBILD_SHA_ZHAO.handFull": "手牌已满，无法放入推演出的杀招。费用未消耗，所选蛊虫已保留在蛊牌堆。",
   "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.title": "元气",
-  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description": "催动蛊牌使用的独立战斗资源。每场战斗首回合补满；之后每回合按空窍转数恢复。一至九转：上限 3/4/4/5/5/7/7/8/9，每回合回复 1/2/2/2/2/3/3/4/4。"
+  "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description": "催动蛊牌使用的独立战斗资源。每场战斗首回合补满；之后每回合按空窍转数恢复。一至九转：上限 3/4/4/5/5/6/6/6/6，每回合回复 1/2/2/2/2/3/3/3/3；六转进入仙窍后不再提升。"
 }

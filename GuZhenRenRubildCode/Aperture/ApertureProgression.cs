@@ -25,11 +25,13 @@ public static class ApertureProgression
     public const int MaximumImplementedRank = 9;
 
     /// <summary>
-    /// 元气容量的最大值，即九转（<see cref="MaximumImplementedRank"/>）对应的容量。
+    /// 元气容量的最大值，即六转（<see cref="ImmortalRank"/>）对应的容量。
+    /// 六转进入仙窍后元气不再随转数提升：蛊牌从六转起改消耗仙元，
+    /// 元气只作为凡窍阶段的资源，容量与恢复双双封顶（上限 6、每回合 3）。
     /// 供副资源定义用作 hardMaxAmount：即使遗物改写上限的钩子缺席，也不会超出已实现曲线。
-    /// 必须与 <see cref="YuanQiCapacityByRank"/> 的最大值（即 [9] = 9）保持一致。
+    /// 必须与 <see cref="YuanQiCapacityByRank"/> 的最大值（即 [6] = 6）保持一致。
     /// </summary>
-    public const int MaximumYuanQiCapacity = 9;
+    public const int MaximumYuanQiCapacity = 6;
 
     /// <summary>
     /// 杀招推演解锁转数：空窍三转起，每场战斗开始时获得一张"杀招推演"。
@@ -62,7 +64,8 @@ public static class ApertureProgression
         };
 
     /// <summary>
-    /// 空窍转数对应的元气容量上限，曲线 3、4、4、5、5、7、7、8、9。
+    /// 空窍转数对应的元气容量上限，曲线 3、4、4、5、5、6、6、6、6。
+    /// 六转（仙窍）之后不再提升：蛊牌从六转起改消耗仙元，元气不再是仙窍阶段的主力资源。
     /// </summary>
     private static readonly IReadOnlyDictionary<int, int>
         YuanQiCapacityByRank = new Dictionary<int, int>
@@ -72,16 +75,16 @@ public static class ApertureProgression
             [3] = 4,
             [4] = 5,
             [5] = 5,
-            [6] = 7,
-            [7] = 7,
-            [8] = 8,
-            [9] = 9,
+            [6] = 6,
+            [7] = 6,
+            [8] = 6,
+            [9] = 6,
         };
 
     /// <summary>
     /// 每回合元气回复量，由当前元气上限决定：
-    /// 上限 3 回复 1、上限 4~5 回复 2、上限 6~7 回复 3、上限 8~9 回复 4。
-    /// 对应一至九转曲线为 1、2、2、2、2、3、3、4、4。
+    /// 上限 3 回复 1、上限 4~5 回复 2、上限 6 回复 3（即恢复上限 3 点）。
+    /// 对应一至九转曲线为 1、2、2、2、2、3、3、3、3。
     /// </summary>
     public static int GetYuanQiRecovery(int rank)
     {
@@ -91,8 +94,7 @@ public static class ApertureProgression
         {
             <= 3 => 1,
             <= 5 => 2,
-            <= 7 => 3,
-            _ => 4,
+            _ => 3,
         };
     }
 
