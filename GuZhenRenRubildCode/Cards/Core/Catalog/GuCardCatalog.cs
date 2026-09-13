@@ -13,6 +13,18 @@ namespace GuZhenRenRubild.Cards.Core.Catalog;
 /// </summary>
 public static class GuCardCatalog
 {
+    /// <summary>
+    /// 本模组全部卡池：蛊牌主池、杀招池，以及收普通牌与伴生牌的辅助池。
+    ///
+    /// 界面（蛊方大全）经常要跨池找牌——例如从某只蛊的查看页跳到它的伴生牌，
+    /// 而伴生牌不在蛊牌池里。凡是"按类型找一张本模组的牌"都应该走
+    /// <see cref="TryFindCanonical"/>，它会把三个池都扫一遍。
+    /// </summary>
+    public static IEnumerable<CardModel> AllModCards =>
+        ModelDb.CardPool<GuZhenRenRubildGuCardPool>().AllCards
+            .Concat(ModelDb.CardPool<GuZhenRenRubildShaZhaoCardPool>().AllCards)
+            .Concat(ModelDb.CardPool<GuZhenRenRubildCardPool>().AllCards);
+
     /// <summary>蛊牌主奖励池中的全部规范卡牌（含合练结果蛊）。</summary>
     public static IEnumerable<CardModel> AllCards =>
         ModelDb.CardPool<GuZhenRenRubildGuCardPool>().AllCards;
@@ -28,7 +40,10 @@ public static class GuCardCatalog
         return AllCards.Single(card => card.GetType() == cardType);
     }
 
-    /// <summary>按类型尝试取出规范实例，不抛异常。</summary>
+    /// <summary>
+    /// 按类型尝试取出规范实例，不抛异常。跨全部模组卡池查找，
+    /// 因此伴生牌一类"不在蛊牌池里"的卡也能取到。
+    /// </summary>
     public static bool TryFindCanonical(
         Type cardType,
         out CardModel? canonical
@@ -36,7 +51,7 @@ public static class GuCardCatalog
     {
         ArgumentNullException.ThrowIfNull(cardType);
 
-        canonical = AllCards.FirstOrDefault(
+        canonical = AllModCards.FirstOrDefault(
             card => card.GetType() == cardType
         );
         return canonical != null;

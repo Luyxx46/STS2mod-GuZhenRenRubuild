@@ -39,13 +39,28 @@ public static class GuCardRuntime
         return card is not IGuCard || GetRemainingUses(card) > 0;
     }
 
-    // 判断蛊牌能否从激活区打出：必须是蛊牌、位于激活区、有剩余次数、已进入战斗，并拥有足够元气。
+    // 判断蛊牌能否从激活区打出：必须是蛊牌、位于激活区或原生手牌、有剩余次数、已进入战斗，并拥有足够元气。
+    //
+    // 不能只认激活区：RitsuLib 为了让"额外手牌"复用原版基于手牌的打牌流程，在
+    // CardModel.CanPlay 执行期间会临时改写 CardModel.Pile 的取值
+    // （ModExtraHandCanPlaySemanticPatch + ModExtraHandSemanticContext +
+    // ModExtraHandCardPileSemanticPatch）：此时激活区的蛊牌读到的牌堆是原生手牌，
+    // 而不是激活区。若这里仍要求等于激活区，任何蛊牌在原版可打出判定里都会得到
+    // "BlockedByCardLogic"，表现为元气充足也点不动蛊牌。
+    // 原生手牌同时是蛊牌出牌事务中的临时位置（见 GuZhenRenRubildRelic.BeforeCardPlayed），
+    // 因此两者都算可激活位置；储备区、恢复区、封存区、抽牌堆、弃牌堆与牌组一律不可打出。
     public static bool CanActivate(CardModel card)
     {
         if (card is not IGuCard gu ||
-            card.Pile?.Type != GuCardPileSystem.ActivePileType ||
             GetRemainingUses(card) <= 0 ||
             card.Owner.PlayerCombatState == null)
+        {
+            return false;
+        }
+
+        PileType? pileType = card.Pile?.Type;
+        if (pileType != GuCardPileSystem.ActivePileType &&
+            pileType != PileType.Hand)
         {
             return false;
         }

@@ -24,6 +24,11 @@ public static class GuZhenRenRubildAssets
     // 卡牌文本与能量轮廓共用的深色描边。
     public static readonly Color EnergyOutlineColor = new(0.08f, 0.18f, 0.24f);
 
+    // 蛊牌费用区（显示元气点数）的配色：淡蓝灰图标 + 近白文字，沿用旧模组的取值，
+    // 让"费用是元气"与原生能量费用在视觉上可以一眼区分。
+    public static readonly Color YuanQiCostIconTint = new(0.68f, 0.80f, 0.86f);
+    public static readonly Color YuanQiCostTextColor = new(0.80f, 0.90f, 0.95f);
+
     // 卡池边框材质按角色主题色着色，首次使用时才创建，避免在 Godot 就绪前构造材质。
     private static readonly Lazy<Material?> FrameTintMaterial = new(
         static () => MaterialUtils.CreateReplaceHueShaderMaterial(

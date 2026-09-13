@@ -32,7 +32,12 @@ public static class ShaZhaoCardCatalog
         return AllCards.Single(card => card.GetType() == cardType);
     }
 
-    /// <summary>按类型尝试取出规范实例，不抛异常。</summary>
+    /// <summary>
+    /// 按类型尝试取出规范实例，不抛异常。
+    ///
+    /// 委托给 <see cref="Catalog.GuCardCatalog.TryFindCanonical"/> 跨全部模组卡池查找，
+    /// 这样界面从杀招跳到材料蛊、或从蛊跳到伴生牌都能取到规范实例。
+    /// </summary>
     public static bool TryFindCanonical(
         Type cardType,
         out CardModel? canonical
@@ -40,10 +45,7 @@ public static class ShaZhaoCardCatalog
     {
         ArgumentNullException.ThrowIfNull(cardType);
 
-        canonical = AllCards.FirstOrDefault(
-            card => card.GetType() == cardType
-        );
-        return canonical != null;
+        return Catalog.GuCardCatalog.TryFindCanonical(cardType, out canonical);
     }
 
     /// <summary>

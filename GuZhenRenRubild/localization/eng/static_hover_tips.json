@@ -1,4 +1,6 @@
 {
+  "GU_ZHEN_REN_RUBILD_RECIPE_COMPENDIUM.title": "Gu Compendium",
+  "GU_ZHEN_REN_RUBILD_RECIPE_COMPENDIUM.description": "Browse the Gu compendium plus every refinement and killer-move recipe, with each Gu's acquisition and paths.",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.title": "Active Gu",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.description": "Holds up to 5 Gu ready to activate. Empty slots are filled from Gu Waiting in order.",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.empty": "No active Gu.",

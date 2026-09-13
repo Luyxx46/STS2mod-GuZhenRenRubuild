@@ -1,0 +1,660 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://GuZhenRenRubildCode/Ui/RecipeCompendiumOverlay.cs" id="1_rcmp0"]
+
+[sub_resource type="StyleBoxFlat" id="StylePanel"]
+bg_color = Color(0.0823529, 0.113725, 0.129412, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.45098, 0.388235, 0.309804, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.65)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="StyleRow"]
+bg_color = Color(0.12549, 0.168627, 0.188235, 1)
+border_width_left = 2
+border_width_top = 1
+border_width_right = 2
+border_width_bottom = 1
+border_color = Color(0.603922, 0.501961, 0.384314, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleTabOff"]
+bg_color = Color(0.12549, 0.168627, 0.188235, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45098, 0.388235, 0.309804, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleTabOn"]
+bg_color = Color(0.192157, 0.258824, 0.286275, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.815686, 0.643137, 0.368627, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleDialogOff"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+bg_color = Color(0.12549, 0.168627, 0.188235, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.490196, 0.435294, 0.356863, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleDialogOn"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 9.0
+bg_color = Color(0.235294, 0.321569, 0.34902, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 2
+border_color = Color(0.815686, 0.643137, 0.368627, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 3
+shadow_offset = Vector2(0, 1)
+
+[node name="RecipeCompendiumOverlay" type="CanvasLayer"]
+layer = 92
+process_mode = 3
+script = ExtResource("1_rcmp0")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.62)
+
+[node name="Dialog" type="PanelContainer" parent="Backdrop"]
+unique_name_in_owner = true
+anchor_left = 0.15
+anchor_top = 0.1
+anchor_right = 0.85
+anchor_bottom = 0.91
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StylePanel")
+
+[node name="PaperTexture" type="TextureRect" parent="Backdrop/Dialog"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.72)
+layout_mode = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 1
+
+[node name="DialogMargin" type="MarginContainer" parent="Backdrop/Dialog"]
+layout_mode = 2
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 28
+
+[node name="DialogBody" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 18
+
+[node name="HeaderIcon" type="TextureRect" parent="Backdrop/Dialog/DialogMargin/DialogBody/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 58)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Titles" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="TitleLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/Header/Titles"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_outline_color = Color(0.02, 0.05, 0.06, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 34
+text = "蛊方大全"
+
+[node name="SubtitleLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/Header/Titles"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.411765, 0.65098, 0.658824, 1)
+theme_override_font_sizes/font_size = 18
+text = "蛊虫、卡牌、合练与杀招推演的完整图鉴"
+
+[node name="CloseButton" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+theme_override_styles/normal = SubResource("StyleDialogOff")
+theme_override_styles/hover = SubResource("StyleDialogOn")
+theme_override_styles/pressed = SubResource("StyleDialogOn")
+theme_override_styles/focus = SubResource("StyleDialogOn")
+text = "返回"
+
+[node name="RecipeListView" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TabsAndSearch" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="GuTab" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleTabOff")
+theme_override_styles/hover = SubResource("StyleTabOn")
+theme_override_styles/pressed = SubResource("StyleTabOn")
+theme_override_styles/focus = SubResource("StyleTabOn")
+toggle_mode = true
+text = "蛊虫大全"
+
+[node name="CardTab" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleTabOff")
+theme_override_styles/hover = SubResource("StyleTabOn")
+theme_override_styles/pressed = SubResource("StyleTabOn")
+theme_override_styles/focus = SubResource("StyleTabOn")
+toggle_mode = true
+text = "卡牌大全"
+
+[node name="HeLianTab" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleTabOff")
+theme_override_styles/hover = SubResource("StyleTabOn")
+theme_override_styles/pressed = SubResource("StyleTabOn")
+theme_override_styles/focus = SubResource("StyleTabOn")
+toggle_mode = true
+text = "合练配方"
+
+[node name="ShaZhaoTab" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 48)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleTabOff")
+theme_override_styles/hover = SubResource("StyleTabOn")
+theme_override_styles/pressed = SubResource("StyleTabOn")
+theme_override_styles/focus = SubResource("StyleTabOn")
+toggle_mode = true
+text = "杀招配方"
+
+[node name="SearchSpacer" type="Control" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RecipeSearch" type="LineEdit" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/TabsAndSearch"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_placeholder_color = Color(0.603922, 0.639216, 0.631373, 1)
+theme_override_font_sizes/font_size = 19
+placeholder_text = "输入蛊虫名称搜索……"
+clear_button_enabled = true
+
+[node name="RecipeSummary" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.603922, 0.639216, 0.631373, 1)
+theme_override_font_sizes/font_size = 18
+text = "共收录 0 条"
+
+[node name="RecipeScroll" type="ScrollContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="RecipeRows" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView/RecipeScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="FooterLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/RecipeListView"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.603922, 0.639216, 0.631373, 1)
+theme_override_font_sizes/font_size = 16
+text = "内容直接来自卡池与配方注册表，新增卡牌或杀招会自动收录。"
+horizontal_alignment = 1
+
+[node name="CardDetailView" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="CardDetailToolbar" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView"]
+layout_mode = 2
+
+[node name="CardBackButton" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(118, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleDialogOff")
+theme_override_styles/hover = SubResource("StyleDialogOn")
+theme_override_styles/pressed = SubResource("StyleDialogOn")
+theme_override_styles/focus = SubResource("StyleDialogOn")
+text = "← 返回"
+
+[node name="CardToolbarSpacer" type="Control" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CardDetailHintLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.603922, 0.639216, 0.631373, 1)
+theme_override_font_sizes/font_size = 17
+text = "选择转数，说明将同步变化"
+vertical_alignment = 1
+
+[node name="CardDetailColumns" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+
+[node name="CardPortraitHost" type="CenterContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 340)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="CardPortrait" type="TextureRect" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardPortraitHost"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 228)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CardDetailScroll" type="ScrollContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="CardDetailCopy" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="CardDetailTitle" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 32
+autowrap_mode = 3
+
+[node name="CardDetailMeta" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.411765, 0.65098, 0.658824, 1)
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 3
+
+[node name="CardDescriptionSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "蛊虫介绍"
+
+[node name="CardDetailDescription" type="RichTextLabel" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_font_sizes/normal_font_size = 20
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="CardDetailDetailSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "详细说明"
+
+[node name="CardDetailDetailText" type="RichTextLabel" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_font_sizes/normal_font_size = 20
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="CardRankSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "预览转数"
+
+[node name="CardRankButtons" type="HFlowContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 7
+theme_override_constants/v_separation = 7
+
+[node name="AcquisitionSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "获取方式"
+
+[node name="AcquisitionContent" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="HeLianPathSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "合练路径"
+
+[node name="HeLianPathContent" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ShaZhaoPathSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "杀招路径"
+
+[node name="ShaZhaoPathContent" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="CompanionSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "伴生牌"
+
+[node name="CompanionContent" type="HFlowContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/CardDetailView/CardDetailColumns/CardDetailScroll/CardDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 8
+
+[node name="ShaZhaoDetailView" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="ShaZhaoToolbar" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView"]
+layout_mode = 2
+
+[node name="ShaZhaoBackButton" type="Button" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(118, 46)
+layout_mode = 2
+focus_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_colors/font_hover_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_colors/font_pressed_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleDialogOff")
+theme_override_styles/hover = SubResource("StyleDialogOn")
+theme_override_styles/pressed = SubResource("StyleDialogOn")
+theme_override_styles/focus = SubResource("StyleDialogOn")
+text = "← 返回"
+
+[node name="ShaZhaoToolbarSpacer" type="Control" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShaZhaoToolbarLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoToolbar"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.603922, 0.639216, 0.631373, 1)
+theme_override_font_sizes/font_size = 17
+text = "杀招详情"
+vertical_alignment = 1
+
+[node name="ShaZhaoDetailColumns" type="HBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+
+[node name="ShaZhaoPortraitHost" type="CenterContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 340)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="ShaZhaoPortrait" type="TextureRect" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoPortraitHost"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 228)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ShaZhaoDetailScroll" type="ScrollContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ShaZhaoDetailCopy" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="ShaZhaoDetailTitle" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.815686, 0.643137, 0.368627, 1)
+theme_override_font_sizes/font_size = 32
+autowrap_mode = 3
+
+[node name="ShaZhaoDetailMeta" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.411765, 0.65098, 0.658824, 1)
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 3
+
+[node name="ShaZhaoDescriptionSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "杀招介绍"
+text = "杀招介绍"
+
+[node name="ShaZhaoDetailDescription" type="RichTextLabel" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_font_sizes/normal_font_size = 20
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="ShaZhaoDetailDetailSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "详细说明"
+
+[node name="ShaZhaoDetailDetailText" type="RichTextLabel" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/default_color = Color(0.905882, 0.87451, 0.796078, 1)
+theme_override_font_sizes/normal_font_size = 20
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="ShaZhaoMaterialsSectionLabel" type="Label" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.764706, 0.427451, 0.352941, 1)
+theme_override_font_sizes/font_size = 21
+text = "组方材料"
+
+[node name="ShaZhaoMaterialsContent" type="VBoxContainer" parent="Backdrop/Dialog/DialogMargin/DialogBody/ShaZhaoDetailView/ShaZhaoDetailColumns/ShaZhaoDetailScroll/ShaZhaoDetailCopy"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6

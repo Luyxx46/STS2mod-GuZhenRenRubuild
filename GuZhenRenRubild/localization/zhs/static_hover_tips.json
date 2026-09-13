@@ -1,4 +1,6 @@
 {
+  "GU_ZHEN_REN_RUBILD_RECIPE_COMPENDIUM.title": "蛊方大全",
+  "GU_ZHEN_REN_RUBILD_RECIPE_COMPENDIUM.description": "查看蛊虫大全、合练与杀招推演的完整配方录，并查看每只蛊虫的获取方式与路径。",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.title": "蛊手牌",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.description": "最多容纳5张可催动蛊牌。出现空位时按顺序从蛊待命堆补入。",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.empty": "蛊手牌为空。",

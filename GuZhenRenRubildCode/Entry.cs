@@ -6,6 +6,7 @@ using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.Patches;
+using GuZhenRenRubild.Ui;
 using STS2RitsuLib;
 using STS2RitsuLib.Interop;
 using Logger = MegaCrit.Sts2.Core.Logging.Logger;
@@ -30,6 +31,10 @@ public partial class Entry
     [
         new(nameof(GuCardPileSystem), GuCardPileSystem.Initialize, GuCardPileSystem.Uninitialize),
         new(nameof(YuanQiSystem), YuanQiSystem.Initialize, YuanQiSystem.Uninitialize),
+        // 蛊牌费用区把原生能量费用改写成本蛊声明的元气点数，与元气系统同属"元气显示层"。
+        // 该补丁只读 IGuCard.YuanQiCost 与本地 NCard 节点，不依赖元气资源编号，
+        // 因此没有硬性先后要求，放在这里只是为了让同一层的组件相邻、便于排查。
+        new(nameof(NCardGuEnergyCostPatch), NCardGuEnergyCostPatch.Initialize, NCardGuEnergyCostPatch.Uninitialize),
         // 空窍运行时负责转数与修为的跨存档/联机持久化，必须早于依赖它的遗物钩子就绪。
         new(nameof(ApertureSystem), ApertureSystem.Initialize, ApertureSystem.Uninitialize),
         // 杀招推演与材料绑定依赖牌堆注册（蛊封存区）与元气副资源，必须晚于二者启动。
@@ -43,6 +48,8 @@ public partial class Entry
         new(nameof(GuCombatPatch), GuCombatPatch.Initialize, GuCombatPatch.Uninitialize),
         // 蛊手牌布局补丁只依赖牌堆注册结果，必须晚于 GuCardPileSystem 启动。
         new(nameof(GuHandLayoutPatch), GuHandLayoutPatch.Initialize, GuHandLayoutPatch.Uninitialize),
+        // 配方大全只读配方注册表，卡牌扫描在 RegisterContentOnce 中已完成，放在最后即可。
+        new(nameof(RecipeCompendiumSystem), RecipeCompendiumSystem.Initialize, RecipeCompendiumSystem.Uninitialize),
     ];
 
     private static bool _contentRegistered;

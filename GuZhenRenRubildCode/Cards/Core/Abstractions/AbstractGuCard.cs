@@ -1,5 +1,6 @@
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
+using GuZhenRenRubild.Common.Text;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
@@ -115,13 +116,37 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     }
 
     // 将品阶、最大次数、剩余次数和恢复回合数注入本地化参数，供卡牌描述中的占位符直接使用。
+    //
+    // 卡面头部采用文言风格（"三转 · 冷却二"），因此中文数字参数 {RankCN}/{RemainingUsesCN}/{RecoveryTurnsCN}
+    // 与阿拉伯数字参数并存：中文文案用前者，英文文案用后者。
+    // {Rank1Exact}~{RankNExact} 供"只显示当前转数对应机制"的条件文本使用。
+    //
+    // 描述里引用的每个参数都必须在这里注入，否则卡面会字面显示未解析的占位符。
     protected override void AddExtraArgsToDescription(LocString description)
     {
         base.AddExtraArgsToDescription(description);
+
+        int remainingUses = GuCardRuntime.GetRemainingUses(this);
+
         description.Add("Rank", GuRank);
+        description.Add("RankCN", ChineseNumber.ToChineseNumber(GuRank));
         description.Add("MaxUses", MaxUses);
-        description.Add("RemainingUses", GuCardRuntime.GetRemainingUses(this));
+        description.Add("RemainingUses", remainingUses);
+        description.Add(
+            "RemainingUsesCN",
+            ChineseNumber.ToChineseNumber(remainingUses)
+        );
         description.Add("RecoveryTurns", RecoveryDelayTurns);
+        description.Add(
+            "RecoveryTurnsCN",
+            ChineseNumber.ToChineseNumber(RecoveryDelayTurns)
+        );
+
+        // 品阶区间按本牌自身的转数上限注入，转数更高的蛊牌同样可用。
+        for (int rank = MinimumGuRank; rank <= MaxGuRank; rank++)
+        {
+            description.Add($"Rank{rank}Exact", GuRank == rank ? 1 : 0);
+        }
     }
 
     // 为尚未初始化的蛊牌抽取初始品阶。均值会随楼层缓慢提高，但最高只提升到 3；标准差固定为 2。
@@ -169,6 +194,18 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
         return true;
     }
 
+    // 只读界面（配方大全等）需要展示"任意转数下的卡面与说明"。
+    // 蛊牌不参与原生升级，原生没有转数预览入口，因此这里提供唯一的外部写入口。
+    // 传入对象必须是可变副本（ToMutable），不得作用于卡池中的规范实例，否则会污染整局游戏的同一张卡。
+    //
+    // persist: false 表示"纯预览"——只改本实例的显示转数，不写 SavedAttachedState。
+    // 预览副本是一次性的（每次刷新卡面都会重新克隆），写入附加状态只会给
+    // 永远不会被存档或销毁的临时对象留下条目，因此这里必须可关闭。
+    internal void InitializeGuRankForPreview(int rank, bool persist = false)
+    {
+        SetGuRank(Math.Clamp(rank, MinimumGuRank, MaxGuRank), persist);
+    }
+
     // 在战斗构建或反序列化后重新同步品阶相关状态，并让子类重新计算依赖品阶的动态数值。
     internal void RefreshRankDerivedState()
     {
@@ -194,10 +231,16 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
         RefreshRankDerivedState();
     }
 
-    // 统一的品阶写入口：写入合法值、标记已初始化，并触发子类的数值刷新钩子。
-    private void SetGuRank(int rank)
+    // 统一的品阶写入口：写入合法值、按需标记已初始化，并触发子类的数值刷新钩子。
+    private void SetGuRank(int rank, bool persist = true)
     {
         GuRank = rank;
+
+        if (!persist)
+        {
+            return;
+        }
+
         _rankAssigned = true;
         RankAssignedState[this] = true;
         OnGuRankChanged();

@@ -40,6 +40,13 @@ internal static class RequiredMember
         Type[] parameterTypes
     ) => Find(AccessTools.DeclaredMethod(type, name, parameterTypes), type, name);
 
+    /// <summary>查找必需字段（只看声明类型自身，不看基类）。</summary>
+    internal static FieldInfo Field(Type type, string name) =>
+        AccessTools.Field(type, name) ?? throw new MissingFieldException(
+            type.FullName ?? type.Name,
+            name
+        );
+
     /// <summary>查找必需属性 getter。</summary>
     internal static MethodInfo PropertyGetter(Type type, string propertyName) =>
         Find(AccessTools.PropertyGetter(type, propertyName), type, propertyName);
