@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Rules;
 using GuZhenRenRubild.Common.Text;
 

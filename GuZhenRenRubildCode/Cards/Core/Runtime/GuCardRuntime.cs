@@ -3,8 +3,9 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Utils;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Runtime;
 
 /// <summary>
 /// 保存每张蛊牌在当前战斗中的使用次数与恢复回合，并提供统一的激活资格判断。
@@ -110,5 +111,26 @@ public static class GuCardRuntime
     {
         SpentUsesState[card] = 0;
         RecoveryTurnState[card] = 0;
+    }
+
+    // 让一张蛊牌从零开始完整冷却：先把使用次数标记为耗尽，再写入恢复终点。
+    // 杀招材料归还时使用该入口；extraTurns 表示在正常冷却之外额外延后的回合数，
+    // 由调用方负责把蛊牌移动到恢复区。
+    public static void BeginRecovery(
+        CardModel card,
+        int currentTurn,
+        int extraTurns = 0
+    )
+    {
+        if (card is not IGuCard gu)
+        {
+            return;
+        }
+
+        SpentUsesState[card] = Math.Max(1, gu.MaxUses);
+        RecoveryTurnState[card] =
+            Math.Max(1, currentTurn) +
+            Math.Max(1, gu.RecoveryDelayTurns) +
+            Math.Max(0, extraTurns);
     }
 }

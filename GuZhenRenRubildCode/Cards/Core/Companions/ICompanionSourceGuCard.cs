@@ -1,4 +1,4 @@
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 
 namespace GuZhenRenRubild.Cards.Core.Companions;
 

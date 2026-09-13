@@ -1,5 +1,5 @@
 using System.Reflection;
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Common.Patching;
 using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;

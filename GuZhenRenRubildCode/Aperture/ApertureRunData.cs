@@ -40,6 +40,21 @@ public sealed class ApertureRunData
     /// </summary>
     public bool SideEffectProgressInitialized { get; set; }
 
+    /// <summary>
+    /// 已经初始化过"战斗开始事务"的运行层数。
+    /// 战斗开始回调可能在同一次战斗的重连或房间重建中重放，
+    /// 只有层数变化才视为一场新战斗。-1 表示尚未进入过战斗。
+    /// </summary>
+    public int ActiveCombatFloor { get; set; } = -1;
+
+    /// <summary>
+    /// 已经发放过"杀招推演"的运行层数；-1 表示本场战斗尚未发放。
+    /// </summary>
+    public int ShaZhaoDerivationGrantFloor { get; set; } = -1;
+
+    /// <summary>本场战斗中已经成功完成的杀招推演次数。</summary>
+    public int ShaZhaoDerivationsThisCombat { get; set; }
+
     public bool NeedsNormalization()
     {
         int normalizedRank = Math.Clamp(
@@ -51,6 +66,16 @@ public sealed class ApertureRunData
         if (Rank != normalizedRank ||
             Xp < 0 ||
             VictoryXpAppliedFloor < -1)
+        {
+            return true;
+        }
+
+        // 杀招推演进度只在一个战斗内有效，越界值一律重新规范化。
+        if (ActiveCombatFloor < -1 ||
+            ShaZhaoDerivationGrantFloor < -1 ||
+            ShaZhaoDerivationsThisCombat < 0 ||
+            ShaZhaoDerivationsThisCombat >
+                ApertureProgression.ShaZhaoDerivationMaxPerCombat)
         {
             return true;
         }
@@ -97,6 +122,14 @@ public sealed class ApertureRunData
         );
         Xp = Math.Max(0, Xp);
         VictoryXpAppliedFloor = Math.Max(-1, VictoryXpAppliedFloor);
+
+        ActiveCombatFloor = Math.Max(-1, ActiveCombatFloor);
+        ShaZhaoDerivationGrantFloor = Math.Max(-1, ShaZhaoDerivationGrantFloor);
+        ShaZhaoDerivationsThisCombat = Math.Clamp(
+            ShaZhaoDerivationsThisCombat,
+            0,
+            ApertureProgression.ShaZhaoDerivationMaxPerCombat
+        );
 
         if (Rank >= ApertureProgression.MaximumImplementedRank)
         {

@@ -8,6 +8,18 @@
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.title": "蛊冷却堆",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.description": "催动次数耗尽的蛊在这里冷却；恢复完成后进入待命队列。",
   "GU_ZHEN_REN_RUBILD_CARDPILE_GU_RECOVERY.empty": "蛊冷却堆为空。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_SEALED.title": "蛊封存区",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_SEALED.description": "被杀招封装的蛊虫材料停放在这里。封装期间不参与补位、冷却与推演候选；杀招收口后材料返回蛊冷却堆并从零开始完整冷却。",
+  "GU_ZHEN_REN_RUBILD_CARDPILE_GU_SEALED.empty": "蛊封存区为空。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.targetSelectionPrompt": "先选择要推演的杀招。随后只显示能够匹配该杀招的材料。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.selectionPrompt": "选择与 {TargetName} 匹配的蛊虫材料，然后点击确认。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.failureTitle": "杀招推演失败",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.noRecipe": "当前蛊手牌与蛊待命堆中没有可以推演的杀招。费用未消耗。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.notEnoughMaterials": "可用的匹配材料数量不足。费用未消耗，所选蛊虫已保留在蛊牌堆。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.invalidRecipe": "这些材料无法组成杀招。费用未消耗，所选蛊虫已保留在蛊牌堆。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.insufficientYuanQi": "元气不足。费用未消耗，所选蛊虫已保留在蛊牌堆。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.creationFailed": "当前战斗状态无法创建杀招。费用未消耗，所选蛊虫已保留在蛊牌堆。",
+  "GU_ZHEN_REN_RUBILD_SHA_ZHAO.handFull": "手牌已满，无法放入推演出的杀招。费用未消耗，所选蛊虫已保留在蛊牌堆。",
   "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.title": "元气",
   "GU_ZHEN_REN_RUBILD_SECONDARY_RESOURCE_YUAN_QI.description": "催动蛊牌使用的独立战斗资源。每场战斗首回合补满；之后每回合按空窍转数恢复。一至九转：上限 3/4/4/5/5/7/7/8/9，每回合回复 1/2/2/2/2/3/3/4/4。"
 }

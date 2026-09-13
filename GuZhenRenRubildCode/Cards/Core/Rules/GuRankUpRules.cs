@@ -1,4 +1,4 @@
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using MegaCrit.Sts2.Core.Models;
 
 namespace GuZhenRenRubild.Cards.Core.Rules;

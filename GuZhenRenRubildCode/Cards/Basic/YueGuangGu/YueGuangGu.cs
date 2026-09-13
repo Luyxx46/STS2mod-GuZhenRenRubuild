@@ -1,6 +1,6 @@
-using GuZhenRenRubild.Characters;
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;

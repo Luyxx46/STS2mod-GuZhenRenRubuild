@@ -32,6 +32,19 @@ public static class ApertureProgression
     public const int MaximumYuanQiCapacity = 9;
 
     /// <summary>
+    /// 杀招推演解锁转数：空窍三转起，每场战斗开始时获得一张"杀招推演"。
+    /// </summary>
+    public const int ShaZhaoDerivationUnlockRank = 3;
+
+    /// <summary>
+    /// 八转起每场战斗允许成功推演两次；第二次由成功推演后再补一张推演牌提供。
+    /// </summary>
+    public const int ShaZhaoDerivationSecondRank = 8;
+
+    /// <summary>每场战斗允许成功完成的杀招推演次数上限。</summary>
+    public const int ShaZhaoDerivationMaxPerCombat = 2;
+
+    /// <summary>
     /// 各转数突破所需的修为。九转为终点，无需再突破。
     /// </summary>
     private static readonly IReadOnlyDictionary<int, int> RequiredXpByRank =

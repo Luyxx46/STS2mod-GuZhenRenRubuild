@@ -2,7 +2,8 @@ using System.Reflection;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 using GuZhenRenRubild.Aperture;
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Runtime;
+using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.Patches;
 using STS2RitsuLib;
@@ -31,6 +32,9 @@ public partial class Entry
         new(nameof(YuanQiSystem), YuanQiSystem.Initialize, YuanQiSystem.Uninitialize),
         // 空窍运行时负责转数与修为的跨存档/联机持久化，必须早于依赖它的遗物钩子就绪。
         new(nameof(ApertureSystem), ApertureSystem.Initialize, ApertureSystem.Uninitialize),
+        // 杀招推演与材料绑定依赖牌堆注册（蛊封存区）与元气副资源，必须晚于二者启动。
+        new(nameof(ShaZhaoTuiYanSystem), ShaZhaoTuiYanSystem.Initialize, ShaZhaoTuiYanSystem.Uninitialize),
+        new(nameof(ShaZhaoBindingPatch), ShaZhaoBindingPatch.Initialize, ShaZhaoBindingPatch.Uninitialize),
         new(nameof(CompanionDeckLifecyclePatch), CompanionDeckLifecyclePatch.Initialize, CompanionDeckLifecyclePatch.Uninitialize),
         new(nameof(CompanionMutationProtectionPatch), CompanionMutationProtectionPatch.Initialize, CompanionMutationProtectionPatch.Uninitialize),
         new(nameof(GuCardRewardPatch), GuCardRewardPatch.Initialize, GuCardRewardPatch.Uninitialize),

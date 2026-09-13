@@ -7,8 +7,9 @@ using MegaCrit.Sts2.Core.Random;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Scaffolding.Content;
 using STS2RitsuLib.Utils;
+using GuZhenRenRubild.Cards.Core.Runtime;
 
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Abstractions;
 
 /// <summary>
 /// 蛊牌的统一抽象基类，负责保存蛊牌品阶，并定义蛊牌从专用激活区使用时需要遵守的基础规则。

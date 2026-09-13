@@ -1,6 +1,7 @@
 using System.Globalization;
 
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using GuZhenRenRubild.Cards.Core.Recipes;
 
 using MegaCrit.Sts2.Core.CardSelection;

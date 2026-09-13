@@ -1,10 +1,11 @@
 using System.Runtime.CompilerServices;
+using GuZhenRenRubild.Cards.Core.Runtime;
 using Godot;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using STS2RitsuLib.CardPiles.Nodes;
 
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Ui;
 
 /// <summary>
 /// 蛊手牌（RitsuLib ExtraHand，即激活区）的界面布局。

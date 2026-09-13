@@ -1,26 +1,30 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+
 using GuZhenRenRubild.Cards.Core.Abstractions;
-using GuZhenRenRubild.Cards.Core.Catalog;
 
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace GuZhenRenRubild.Cards.Core.Recipes;
+namespace GuZhenRenRubild.Cards.Core.ShaZhao;
 
 /// <summary>
-/// 无序合练配方注册表。
+/// 无序杀招配方注册表。
 ///
-/// 配方由结果牌上的 <see cref="HeLianRecipeAttribute"/> 声明，首次查询时
-/// 从蛊牌主奖励池扫描一次并缓存为"配方册"。匹配时只比较材料卡类型及其数量，
+/// 配方由结果牌上的 <see cref="ShaZhaoRecipeAttribute"/> 声明，首次查询时
+/// 扫描杀招专属卡池一次并缓存为"配方册"。匹配时只比较材料卡类型及其数量，
 /// 玩家选择材料的先后顺序不会影响结果。
 ///
 /// 配方册在构建阶段一次性完成三件事，使后续查询不再线性扫描：
 /// 1. 按材料多重集建立唯一索引（无序匹配的唯一入口）；
 /// 2. 按结果牌类型分组，供"先选结果、再选材料"的界面使用；
 /// 3. 汇总每种材料类型的最低转数要求，供材料筛选使用。
+///
+/// 新增杀招时只需要：继承 <see cref="AbstractShaZhaoCard"/>、
+/// 用 <c>[RegisterCard(typeof(GuZhenRenRubildShaZhaoCardPool))]</c> 注册进杀招池，
+/// 再声明 <see cref="ShaZhaoRecipeAttribute"/>。本类不需要任何改动。
 /// </summary>
-public static class HeLianRecipeRegistry
+public static class ShaZhaoRecipeRegistry
 {
     private static readonly Lazy<RecipeBook> Book = new(
         DiscoverRecipes,
@@ -28,13 +32,19 @@ public static class HeLianRecipeRegistry
     );
 
     /// <summary>
-    /// 根据玩家先选定的结果牌，再匹配材料并创建结果牌。
+    /// 杀招池中是否已经存在至少一条可用配方。
+    /// 空池时推演入口不应被发放，避免玩家拿到一张必然失败的牌。
+    /// </summary>
+    public static bool HasAnyRecipe => Book.Value.All.Count > 0;
+
+    /// <summary>
+    /// 根据玩家先选定的结果牌，再匹配材料并在战斗中创建结果牌。
     /// </summary>
     public static bool TryCreateResultForTarget(
         IEnumerable<CardModel> selectedCards,
         Player owner,
         Type? targetCardType,
-        [NotNullWhen(true)] out AbstractGuCard? result
+        [NotNullWhen(true)] out AbstractShaZhaoCard? result
     )
     {
         ArgumentNullException.ThrowIfNull(selectedCards);
@@ -42,7 +52,7 @@ public static class HeLianRecipeRegistry
 
         CardModel[] materials = selectedCards.ToArray();
 
-        if (materials.Length < 2 ||
+        if (materials.Length == 0 ||
             materials.Any(static card => card is not IGuCard))
         {
             result = null;
@@ -69,66 +79,74 @@ public static class HeLianRecipeRegistry
             return false;
         }
 
-        CardModel canonical = GuCardCatalog.FindCanonical(
+        /*
+         * 战斗中生成的卡牌必须先由当前 CombatState 创建。
+         *
+         * 只创建可变副本并手动设置 Owner 虽然能进入手牌，但不会登记进
+         * CombatState.AllCards；之后打出时，牌堆命令会因为
+         * CombatState.ContainsCard(card) 为 false 而抛出异常。
+         *
+         * CombatState.CreateCard 会创建可变实例、设置 Owner、登记战斗状态，
+         * 并执行 AfterCreated 生命周期。
+         */
+        if (owner.Creature.CombatState is not { } combatState)
+        {
+            result = null;
+            return false;
+        }
+
+        CardModel canonical = ShaZhaoCardCatalog.FindCanonical(
             recipe.ResultCardType
         );
 
-        // 牌组中的卡牌必须先由当前 RunState 创建并登记。
-        // 仅调用 canonical.ToMutable() 再设置 Owner 不会把实例加入
-        // RunState，随后 CardPileCmd.Add(..., PileType.Deck) 会抛出：
-        // "must be added to a RunState before adding it to your deck"。
-        AbstractGuCard createdResult = (AbstractGuCard)owner.RunState.CreateCard(
-            canonical,
-            owner
-        );
+        AbstractShaZhaoCard created = (AbstractShaZhaoCard)
+            combatState.CreateCard(canonical, owner);
 
         try
         {
-            createdResult.InitializeFromHeLian(materials);
-            result = createdResult;
+            created.InitializeFromMaterials(materials);
+            result = created;
             return true;
         }
         catch
         {
-            // CreateCard 已把结果实例加入运行状态；初始化失败时必须
-            // 清理该未完成实例，避免留下不可见的悬空卡牌。
-            owner.RunState.RemoveCard(createdResult);
+            // CreateCard 已把实例登记进战斗状态；初始化失败时必须清理，
+            // 避免留下不可见的悬空卡牌。
+            combatState.RemoveCard(created);
             throw;
         }
     }
 
     /// <summary>
-    /// 根据当前可用材料，返回至少一条可制作配方所需的选牌范围。
-    /// 配方本身决定材料数，因此这里没有固定"两张牌"限制。
+    /// 只检查材料是否匹配某条杀招配方，不创建战斗卡牌。
+    /// 推演流程用它在创建结果前验证元气费用，避免支付失败时留下
+    /// 已登记但不可见的战斗卡牌实例。
     /// </summary>
-    public static bool TryGetCraftableMaterialCountRange(
-        IEnumerable<CardModel> availableMaterials,
-        out int minimum,
-        out int maximum
-    )
+    public static bool HasMatchingRecipe(IEnumerable<CardModel> selectedCards)
     {
-        ArgumentNullException.ThrowIfNull(availableMaterials);
-
-        int[] craftableCounts = GetCraftableRecipes(
-                availableMaterials.ToArray()
-            )
-            .Select(static recipe => recipe.MaterialCardTypes.Count)
-            .ToArray();
-
-        if (craftableCounts.Length == 0)
-        {
-            minimum = 0;
-            maximum = 0;
-            return false;
-        }
-
-        minimum = craftableCounts.Min();
-        maximum = craftableCounts.Max();
-        return true;
+        ArgumentNullException.ThrowIfNull(selectedCards);
+        return Book.Value.TryFindRecipe(selectedCards.ToArray(), null, out _);
     }
 
     /// <summary>
-    /// 返回当前材料足以完成的合练结果牌类型，顺序按完整类型名稳定排序。
+    /// 只检查材料是否匹配指定杀招。
+    /// </summary>
+    public static bool HasMatchingRecipe(
+        IEnumerable<CardModel> selectedCards,
+        Type targetCardType
+    )
+    {
+        ArgumentNullException.ThrowIfNull(selectedCards);
+        ArgumentNullException.ThrowIfNull(targetCardType);
+        return Book.Value.TryFindRecipe(
+            selectedCards.ToArray(),
+            targetCardType,
+            out _
+        );
+    }
+
+    /// <summary>
+    /// 返回当前可用材料足以完成的杀招结果类型，顺序按完整类型名稳定排序。
     /// </summary>
     public static IReadOnlyList<Type> GetCraftableResultTypes(
         IEnumerable<CardModel> availableMaterials
@@ -136,7 +154,10 @@ public static class HeLianRecipeRegistry
     {
         ArgumentNullException.ThrowIfNull(availableMaterials);
 
-        return GetCraftableRecipes(availableMaterials.ToArray())
+        CardModel[] available = availableMaterials.ToArray();
+
+        return Book.Value.All
+            .Where(recipe => ContainsRequiredMaterials(available, recipe))
             .Select(static recipe => recipe.ResultCardType)
             .Distinct()
             .OrderBy(static type => type.FullName ?? type.Name, StringComparer.Ordinal)
@@ -144,7 +165,7 @@ public static class HeLianRecipeRegistry
     }
 
     /// <summary>
-    /// 获取指定结果牌的全部候选材料类型并集与最低转数。
+    /// 获取指定杀招的全部候选材料类型并集与最低转数。
     /// 结果牌可声明多条配方，玩家选定结果后仍可在这些配方之间自由选择。
     /// </summary>
     public static IReadOnlyList<Type> GetMaterialTypesForResult(
@@ -170,25 +191,8 @@ public static class HeLianRecipeRegistry
     }
 
     /// <summary>
-    /// 判断材料是否至少能参与指定结果牌的一条配方，包含该配方的最低转数要求。
-    /// </summary>
-    public static bool IsEligibleMaterialCardForResult(
-        CardModel card,
-        Type resultCardType
-    )
-    {
-        ArgumentNullException.ThrowIfNull(card);
-        ArgumentNullException.ThrowIfNull(resultCardType);
-
-        return card is IGuCard gu &&
-            Book.Value.GetRecipesForResult(resultCardType).Any(recipe =>
-                recipe.MaterialCounts.ContainsKey(card.GetType()) &&
-                gu.GuRank >= recipe.MinimumMaterialRank
-            );
-    }
-
-    /// <summary>
-    /// 获取指定合练结果牌的材料数量范围。
+    /// 获取指定杀招的材料数量范围。多条配方时取最小与最大张数，
+    /// 最终仍由完整材料多重集校验。
     /// </summary>
     public static bool GetMaterialCountRangeForResult(
         Type resultCardType,
@@ -231,8 +235,25 @@ public static class HeLianRecipeRegistry
     }
 
     /// <summary>
-    /// 获取全部配方及其材料最低转数要求。
-    /// 供后续的配方大全界面展示完整条件。
+    /// 判断材料是否至少能参与指定杀招的一条配方，包含该配方的最低转数要求。
+    /// </summary>
+    public static bool IsEligibleMaterialCardForResult(
+        CardModel card,
+        Type resultCardType
+    )
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        ArgumentNullException.ThrowIfNull(resultCardType);
+
+        return card is IGuCard gu &&
+            Book.Value.GetRecipesForResult(resultCardType).Any(recipe =>
+                recipe.MaterialCounts.ContainsKey(card.GetType()) &&
+                gu.GuRank >= recipe.MinimumMaterialRank
+            );
+    }
+
+    /// <summary>
+    /// 获取全部配方及其材料最低转数要求，供配方大全一类的界面展示完整条件。
     /// </summary>
     public static IReadOnlyList<(
         Type ResultCardType,
@@ -240,64 +261,13 @@ public static class HeLianRecipeRegistry
         int MinimumMaterialRank
     )> GetRecipeDetails()
     {
-        return Book.Value
-            .All
+        return Book.Value.All
             .Select(static recipe => (
                 recipe.ResultCardType,
                 recipe.MaterialCardTypes,
                 recipe.MinimumMaterialRank
             ))
             .ToArray();
-    }
-
-    /// <summary>
-    /// 扫描蛊牌主奖励池，收集所有声明了 <see cref="HeLianRecipeAttribute"/>
-    /// 的非抽象蛊牌类型并构建配方册。顺序按完整类型名稳定排序，
-    /// 保证重复配方的报错信息与配方列表顺序可复现。
-    /// </summary>
-    private static RecipeBook DiscoverRecipes()
-    {
-        List<Recipe> recipes = [];
-
-        foreach (CardModel canonical in GuCardCatalog.AllCards.OrderBy(
-            static card => card.GetType().FullName ?? card.GetType().Name,
-            StringComparer.Ordinal
-        ))
-        {
-            Type resultType = canonical.GetType();
-
-            if (resultType.IsAbstract ||
-                !typeof(AbstractGuCard).IsAssignableFrom(resultType))
-            {
-                continue;
-            }
-
-            foreach (HeLianRecipeAttribute attribute in resultType
-                .GetCustomAttributes<HeLianRecipeAttribute>(inherit: false))
-            {
-                recipes.Add(
-                    new Recipe(
-                        resultType,
-                        Array.AsReadOnly(attribute.MaterialCardTypes.ToArray()),
-                        Math.Max(
-                            AbstractGuCard.MinimumGuRank,
-                            attribute.MinimumMaterialRank
-                        )
-                    )
-                );
-            }
-        }
-
-        return RecipeBook.Build(recipes);
-    }
-
-    private static IEnumerable<Recipe> GetCraftableRecipes(
-        CardModel[] availableMaterials
-    )
-    {
-        return Book.Value.All.Where(recipe =>
-            ContainsRequiredMaterials(availableMaterials, recipe)
-        );
     }
 
     private static bool ContainsRequiredMaterials(
@@ -341,7 +311,65 @@ public static class HeLianRecipeRegistry
     }
 
     /// <summary>
-    /// 一条无序合练配方。材料多重集在构造时压成排序后的类型名键，
+    /// 扫描杀招专属卡池，收集所有声明了 <see cref="ShaZhaoRecipeAttribute"/>
+    /// 的非抽象杀招类型并构建配方册。顺序按完整类型名稳定排序，
+    /// 保证重复配方的报错信息与配方列表顺序可复现。
+    /// </summary>
+    private static RecipeBook DiscoverRecipes()
+    {
+        List<Recipe> recipes = [];
+
+        foreach (CardModel canonical in ShaZhaoCardCatalog.AllCards.OrderBy(
+            static card => card.GetType().FullName ?? card.GetType().Name,
+            StringComparer.Ordinal
+        ))
+        {
+            Type resultType = canonical.GetType();
+
+            if (resultType.IsAbstract ||
+                !typeof(AbstractShaZhaoCard).IsAssignableFrom(resultType))
+            {
+                continue;
+            }
+
+            foreach (
+                ShaZhaoRecipeAttribute attribute in resultType
+                    .GetCustomAttributes<ShaZhaoRecipeAttribute>(inherit: false)
+            )
+            {
+                recipes.Add(
+                    new Recipe(
+                        resultType,
+                        Array.AsReadOnly(attribute.MaterialCardTypes.ToArray()),
+                        Math.Max(
+                            AbstractGuCard.MinimumGuRank,
+                            attribute.MinimumMaterialRank
+                        )
+                    )
+                );
+            }
+        }
+
+        if (recipes.Count > 0)
+        {
+            Entry.Logger.Info(
+                $"[杀招] 已登记 {recipes.Count} 条杀招配方，涉及 " +
+                $"{recipes.Select(static recipe => recipe.ResultCardType).Distinct().Count()} 张杀招牌。"
+            );
+        }
+        else
+        {
+            Entry.Logger.Info(
+                "[杀招] 杀招池为空：当前没有任何杀招配方，" +
+                "推演入口不会被发放。加入带 [ShaZhaoRecipe] 的杀招牌即可启用。"
+            );
+        }
+
+        return RecipeBook.Build(recipes);
+    }
+
+    /// <summary>
+    /// 一条无序杀招配方。材料多重集在构造时压成排序后的类型名键，
     /// 使"材料是否完全相同"退化为一次字符串比较。
     /// </summary>
     private sealed class Recipe
@@ -424,7 +452,7 @@ public static class HeLianRecipeRegistry
                     ))
                 {
                     throw new InvalidOperationException(
-                        "Duplicate unordered HeLian recipe: " +
+                        "Duplicate unordered ShaZhao recipe: " +
                         $"{duplicate.ResultCardType.FullName} and " +
                         $"{recipe.ResultCardType.FullName} use the same materials."
                     );

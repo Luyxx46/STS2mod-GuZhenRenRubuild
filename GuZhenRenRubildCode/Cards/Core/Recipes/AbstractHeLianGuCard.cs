@@ -1,4 +1,5 @@
 using MegaCrit.Sts2.Core.Entities.Cards;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 
 namespace GuZhenRenRubild.Cards.Core.Recipes;
 

@@ -1,4 +1,4 @@
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Abstractions;
 
 /// <summary>
 /// 所有真正蛊牌共享的最小能力接口，只暴露激活、恢复、元气费用和品阶系统必须读取的数据。

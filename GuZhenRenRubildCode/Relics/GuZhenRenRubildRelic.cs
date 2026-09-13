@@ -1,4 +1,5 @@
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Entities.Relics;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -6,7 +7,9 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Rooms;
 using GuZhenRenRubild.Aperture;
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.Runtime;
+using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.RestSite;
@@ -167,6 +170,39 @@ public sealed class GuZhenRenRubildRelic
                 source: this
             );
         }
+    }
+
+    // 战斗开始事务：重置本场战斗的杀招推演进度，并清掉上一场战斗可能残留的材料绑定。
+    // 重连或房间重建会重复触发，因此重置内部按运行层数去重。
+    public override async Task BeforeCombatStart()
+    {
+        await base.BeforeCombatStart();
+        ApertureSystem.HandleCombatStarting(Owner);
+
+        // 战斗卡编号会在新战斗里重新分配，因此残留绑定必须在新战斗开始前清掉，
+        // 否则旧编号可能恰好被新战斗中的另一张牌占用。
+        ShaZhaoBindingService.ClearStaleBindings(Owner);
+    }
+
+    // 本场第一次初始抽牌前发放"杀招推演"：不占起手抽牌，同一运行层数只发放一次。
+    public override Task BeforeHandDraw(
+        Player player,
+        PlayerChoiceContext choiceContext,
+        ICombatState combatState
+    )
+    {
+        return ReferenceEquals(player, Owner)
+            ? ApertureSystem.HandleShaZhaoDerivationGrantAsync(player)
+            : Task.CompletedTask;
+    }
+
+    // 战斗结束兜底：清理全部杀招材料绑定。
+    // 材料留在原地，由游戏的战斗牌堆回收流程送回牌组；这里只解除绑定记录，
+    // 避免绑定状态跨战斗残留导致材料在下一场战斗中被判定为已被封装。
+    public override async Task AfterCombatEnd(CombatRoom room)
+    {
+        await base.AfterCombatEnd(room);
+        ShaZhaoBindingService.FinalizeAllForCombatEnd(Owner);
     }
 
     // 起点遗物作为整个 Run 中稳定存在的 Hook listener，负责把独立"升炼"与"合练"选项加入篝火。

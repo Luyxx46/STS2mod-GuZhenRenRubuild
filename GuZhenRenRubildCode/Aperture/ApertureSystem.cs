@@ -1,6 +1,10 @@
+using GuZhenRenRubild.Cards.Core.ShaZhao;
+using GuZhenRenRubild.Cards.ShaZhao;
 using GuZhenRenRubild.Relics;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 using STS2RitsuLib;
 using STS2RitsuLib.RunData;
@@ -155,6 +159,156 @@ public static class ApertureSystem
         {
             Entry.Logger.Warn($"刷新空窍遗物显示失败：{exception.Message}");
         }
+    }
+
+    /// <summary>
+    /// 战斗开始事务：把"本场战斗"的进度重置一次。
+    ///
+    /// BeforeCombatStart 可能在同一场战斗的重连恢复或房间重建中再次触发，
+    /// 因此用运行层数做去重标记，只有层数变化才视为一场新战斗。
+    /// </summary>
+    internal static void HandleCombatStarting(Player player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        if (!IsInitialized || FindApertureRelic(player) == null)
+        {
+            return;
+        }
+
+        int currentFloor = player.RunState.TotalFloor;
+
+        _savedData!.Modify(
+            player,
+            data =>
+            {
+                data.Normalize();
+
+                if (data.ActiveCombatFloor == currentFloor)
+                {
+                    return;
+                }
+
+                data.ActiveCombatFloor = currentFloor;
+                data.ShaZhaoDerivationGrantFloor = -1;
+                data.ShaZhaoDerivationsThisCombat = 0;
+            }
+        );
+    }
+
+    /// <summary>
+    /// 空窍三转起，每场战斗开始时把"杀招推演"直接加入手牌，不占起手抽牌。
+    /// 同一运行层数只发放一次（重连安全）。
+    ///
+    /// 杀招池为空时不发放：此时没有任何可推演的目标，
+    /// 发牌只会让玩家拿到一张必然失败的系统牌。
+    /// </summary>
+    internal static async Task HandleShaZhaoDerivationGrantAsync(Player player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        if (!IsInitialized || FindApertureRelic(player) == null)
+        {
+            return;
+        }
+
+        if (!ShaZhaoRecipeRegistry.HasAnyRecipe)
+        {
+            return;
+        }
+
+        ApertureRunData data = GetState(player);
+
+        if (data.Rank < ApertureProgression.ShaZhaoDerivationUnlockRank)
+        {
+            return;
+        }
+
+        if (player.Creature.CombatState is not { } combatState)
+        {
+            return;
+        }
+
+        int currentFloor = player.RunState.TotalFloor;
+
+        if (data.ShaZhaoDerivationGrantFloor == currentFloor)
+        {
+            return;
+        }
+
+        CardModel derivation = combatState.CreateCard(
+            ModelDb.Card<ShaZhaoTuiYan>(),
+            player
+        );
+
+        await CardPileCmd.AddGeneratedCardToCombat(
+            derivation,
+            PileType.Hand,
+            player
+        );
+
+        _savedData!.Modify(
+            player,
+            d =>
+            {
+                d.Normalize();
+
+                if (d.ShaZhaoDerivationGrantFloor != currentFloor)
+                {
+                    d.ShaZhaoDerivationGrantFloor = currentFloor;
+                }
+            }
+        );
+    }
+
+    /// <summary>
+    /// 推演成功后登记次数。八转起每场最多两次，第一次成功后再把第二张
+    /// "杀招推演"放入弃牌堆。
+    /// </summary>
+    internal static async Task RegisterShaZhaoDerivationAsync(Player player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        if (!IsInitialized || FindApertureRelic(player) == null)
+        {
+            return;
+        }
+
+        ApertureRunData data = GetState(player);
+
+        if (data.Rank < ApertureProgression.ShaZhaoDerivationUnlockRank)
+        {
+            return;
+        }
+
+        int completed = data.ShaZhaoDerivationsThisCombat + 1;
+
+        _savedData!.Modify(
+            player,
+            d =>
+            {
+                d.Normalize();
+                d.ShaZhaoDerivationsThisCombat = Math.Max(0, completed);
+            }
+        );
+
+        if (data.Rank < ApertureProgression.ShaZhaoDerivationSecondRank ||
+            completed >= ApertureProgression.ShaZhaoDerivationMaxPerCombat ||
+            player.Creature.CombatState is not { } combatState)
+        {
+            return;
+        }
+
+        CardModel second = combatState.CreateCard(
+            ModelDb.Card<ShaZhaoTuiYan>(),
+            player
+        );
+
+        await CardPileCmd.AddGeneratedCardToCombat(
+            second,
+            PileType.Discard,
+            player
+        );
     }
 
     /// <summary>

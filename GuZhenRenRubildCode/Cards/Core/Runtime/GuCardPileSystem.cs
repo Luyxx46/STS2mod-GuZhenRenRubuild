@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using Godot;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -6,27 +7,34 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.CardPiles;
 
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Runtime;
 
 /// <summary>
-/// 管理战斗内蛊牌的三个专用牌堆，并实现完整循环：储备区 → 激活区 → 恢复区 → 储备区。
-/// 激活区以额外手牌形式展示，可直接打出；储备区保存等待补位的蛊牌；恢复区保存使用次数耗尽、尚未恢复的蛊牌。
+/// 管理战斗内蛊牌的专用牌堆，并实现完整循环：储备区 → 激活区 → 恢复区 → 储备区。
+/// 激活区以额外手牌形式展示，可直接打出；储备区保存等待补位的蛊牌；恢复区保存使用次数耗尽、尚未恢复的蛊牌；
+/// 封存区保存被杀招封装、暂时不参与循环的材料蛊。
 /// </summary>
 public static class GuCardPileSystem
 {
     // 激活区最多同时展示的蛊牌数量，空位会从储备区按顺序自动补充。
     public const int ActiveCapacity = 5;
 
-    // 三个本地标识会与模组编号组合成全局唯一牌堆编号。
+    // 四个本地标识会与模组编号组合成全局唯一牌堆编号。
     private const string ActiveLocalId = "gu_active";
     private const string StorageLocalId = "gu_storage";
     private const string RecoveryLocalId = "gu_recovery";
+    // 蛊封存区：杀招材料在杀招存在期间被封存在这里，不再参与推演候选与补位。
+    private const string SealedLocalId = "gu_sealed";
     // 牌堆图标沿用旧模组 STS2_GuZhenRen（GuZhenRenPersonal）的真实美术，
     // 原名分别是「蛊存放排队」与「蛊冷却排队」，此处只把资源根目录换成当前模组。
     private const string StorageIconPath =
         $"res://{Entry.ModId}/images/ui/GuChunFangPaiDui.png";
     private const string RecoveryIconPath =
         $"res://{Entry.ModId}/images/ui/GuLengQuePaiDui.png";
+    // 封存区图标沿用旧模组 STS2_GuZhenRen 的蛊封存堆 SVG（本仓库内为 materials/GuPile.svg）。
+    // 使用独立 SVG 而不是复用冷却堆 PNG，避免封存蛊与冷却蛊在界面上无法区分。
+    private const string SealedIconPath =
+        $"res://{Entry.ModId}/materials/GuPile.svg";
 
     // 注册过程使用互斥锁和初始化标记，避免多入口重复注册同名牌堆。
     private static readonly object SyncRoot = new();
@@ -46,7 +54,15 @@ public static class GuCardPileSystem
     public static PileType StoragePileType { get; private set; }
     public static PileType RecoveryPileType { get; private set; }
 
-    // 向 RitsuLib 注册三个仅在战斗期间存在的蛊牌牌堆及其界面表现。
+    /// <summary>
+    /// 蛊封存区：杀招材料在杀招存在期间被封存在这里。
+    /// 牌堆只描述位置，"这张牌属于哪一张杀招"由
+    /// <c>ShaZhaoBindingService</c> 在材料侧记录的绑定字符串描述，
+    /// 两者必须一起使用才能安全地返还材料。
+    /// </summary>
+    public static PileType SealedPileType { get; private set; }
+
+    // 向 RitsuLib 注册四个仅在战斗期间存在的蛊牌牌堆及其界面表现。
     public static void Initialize()
     {
         lock (SyncRoot)
@@ -106,6 +122,27 @@ public static class GuCardPileSystem
                 }
             ).PileType;
 
+            // 封存区使用右下角自动槽位，紧邻原版消耗牌堆；杀招材料在被封装期间
+            // 只从界面上可见，不参与补位、恢复与推演候选。
+            SealedPileType = registry.RegisterOwned(
+                SealedLocalId,
+                new ModCardPileSpec
+                {
+                    Scope = ModCardPileScope.CombatOnly,
+                    Style = ModCardPileUiStyle.BottomRight,
+                    IconPath = ResourceLoader.Exists(SealedIconPath)
+                        ? SealedIconPath
+                        : RecoveryIconPath,
+                    Anchor = new ModCardPileAnchor(
+                        ModCardPileAnchorKind.BottomRightPrimary,
+                        new Vector2(100f, -140f)
+                    ),
+                    HoverTipPlacement =
+                        ModCardPileHoverTipPlacement.AboveButtonCentered,
+                    CardShouldBeVisible = true,
+                }
+            ).PileType;
+
             _initialized = true;
         }
     }
@@ -126,6 +163,7 @@ public static class GuCardPileSystem
         CardPile active = ActivePileType.GetPile(owner);
         CardPile storage = StoragePileType.GetPile(owner);
         CardPile recovery = RecoveryPileType.GetPile(owner);
+        CardPile sealedPile = SealedPileType.GetPile(owner);
         CardPile[] allPiles =
         [
             PileType.Draw.GetPile(owner),
@@ -134,6 +172,7 @@ public static class GuCardPileSystem
             active,
             storage,
             recovery,
+            sealedPile,
         ];
 
         CardModel[] guCards = allPiles

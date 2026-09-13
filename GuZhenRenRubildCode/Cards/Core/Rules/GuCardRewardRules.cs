@@ -1,5 +1,6 @@
-using GuZhenRenRubild.Cards.Core;
+using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Recipes;
+using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
@@ -13,6 +14,13 @@ public static class GuCardRewardRules
         if (player.Character is not GuZhenRenRubildCharacter)
         {
             return true;
+        }
+
+        // 杀招既不是蛊牌也不是普通牌，是推演产物。
+        // 永远不进入普通卡牌奖励（点名拦一次，避免日后改动这个判断时把它们放进来）。
+        if (candidate is AbstractShaZhaoCard)
+        {
+            return false;
         }
 
         if (candidate is not IGuCard)

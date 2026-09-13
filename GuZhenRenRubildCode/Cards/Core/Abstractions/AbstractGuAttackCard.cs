@@ -1,7 +1,8 @@
+using GuZhenRenRubild.Cards.Core.Runtime;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
-namespace GuZhenRenRubild.Cards.Core;
+namespace GuZhenRenRubild.Cards.Core.Abstractions;
 
 /// <summary>
 /// 攻击型蛊牌的公共父类：出牌时按卡面当前伤害值攻击目标，
