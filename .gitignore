@@ -23,3 +23,5 @@ artifacts/
 # VS Code 个人设置：写死了本机 Godot 编辑器路径（godotTools.editorPath.godot4）
 .vscode/settings.json
 .mnemon/
+# AgentTeams 插件的团队状态与邮箱：本机运行时产物，不入库
+.agent-teams/
