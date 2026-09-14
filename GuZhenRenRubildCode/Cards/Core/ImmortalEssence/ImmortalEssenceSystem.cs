@@ -1,6 +1,7 @@
 using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Runtime;
+using GuZhenRenRubild.Cards.XianYuan;
 using GuZhenRenRubild.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -48,6 +49,35 @@ internal static class ImmortalEssenceSystem
             3
         );
         return 1 << exponent;
+    }
+
+    /// <summary>
+    /// 按空窍转数取对应档位的仙元牌模型：六 / 七 / 八 / 九转分别映射
+    /// 青提 / 红枣 / 白荔 / 黄杏仙元；超过九转仍取黄杏（当前实现上限）。
+    /// 六转以下返回 null（尚未踏入仙窍，不应发放）。
+    ///
+    /// 发放方（<c>ApertureSystem</c>）只经此入口取牌，不直接认识四张仙元牌。
+    /// </summary>
+    internal static CardModel? GetEssenceCardForRank(int rank)
+    {
+        if (rank < ApertureProgression.ImmortalRank)
+        {
+            return null;
+        }
+
+        int index = Math.Clamp(
+            rank - ApertureProgression.ImmortalRank,
+            0,
+            3
+        );
+
+        return index switch
+        {
+            0 => ModelDb.Card<QingTiXianYuan>(),
+            1 => ModelDb.Card<HongZaoXianYuan>(),
+            2 => ModelDb.Card<BaiLiXianYuan>(),
+            _ => ModelDb.Card<HuangXingXianYuan>(),
+        };
     }
 
     /// <summary>这张仙元牌一共提供多少单位；非仙元牌返回 0。</summary>

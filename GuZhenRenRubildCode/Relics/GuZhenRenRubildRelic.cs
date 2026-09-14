@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Rooms;
 using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.ImmortalEssence;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Characters;
@@ -96,6 +97,24 @@ public sealed class GuZhenRenRubildRelic
 
         // 进入实际结算前消耗一次当前激活周期的使用次数。
         GuCardRuntime.RegisterActivation(cardPlay.Card);
+
+        // 六转及以上的蛊牌催动时额外扣减仙元单位（元气照付）。
+        // 可打出判定本应已拦住余额不足的情况；万一漏到这里只记日志，不打断打出流程。
+        if (cardPlay.Card is IGuCard playedGu)
+        {
+            int essenceCost = ImmortalEssenceSystem.GetActivationCost(
+                playedGu.GuRank
+            );
+
+            if (essenceCost > 0 &&
+                !ImmortalEssenceSystem.TrySpend(Owner, essenceCost))
+            {
+                Entry.Logger.Warn(
+                    $"[仙元] {cardPlay.Card.Id} 催动时应扣 {essenceCost} 个仙元单位，" +
+                    "但扣减失败（可打出判定应已拦截）。"
+                );
+            }
+        }
     }
 
     // 蛊牌结算完成后，根据剩余使用次数送回激活区或恢复区，然后尝试从储备区补满激活区。
@@ -184,16 +203,21 @@ public sealed class GuZhenRenRubildRelic
         ShaZhaoBindingService.ClearStaleBindings(Owner);
     }
 
-    // 本场第一次初始抽牌前发放"杀招推演"：不占起手抽牌，同一运行层数只发放一次。
-    public override Task BeforeHandDraw(
+    // 本场第一次初始抽牌前发放系统牌：先发"杀招推演"（三转起），再发"仙元"（六转起）。
+    // 两者都不占起手抽牌，且各自按运行层数去重（重连安全）。
+    public override async Task BeforeHandDraw(
         Player player,
         PlayerChoiceContext choiceContext,
         ICombatState combatState
     )
     {
-        return ReferenceEquals(player, Owner)
-            ? ApertureSystem.HandleShaZhaoDerivationGrantAsync(player)
-            : Task.CompletedTask;
+        if (!ReferenceEquals(player, Owner))
+        {
+            return;
+        }
+
+        await ApertureSystem.HandleShaZhaoDerivationGrantAsync(player);
+        await ApertureSystem.HandleXianYuanGrantAsync(player);
     }
 
     // 战斗结束兜底：清理全部杀招材料绑定。

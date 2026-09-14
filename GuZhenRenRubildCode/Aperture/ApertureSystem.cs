@@ -1,3 +1,5 @@
+using GuZhenRenRubild.Cards.Core.ImmortalEssence;
+using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Cards.ShaZhao;
 using GuZhenRenRubild.Relics;
@@ -192,6 +194,7 @@ public static class ApertureSystem
                 data.ActiveCombatFloor = currentFloor;
                 data.ShaZhaoDerivationGrantFloor = -1;
                 data.ShaZhaoDerivationsThisCombat = 0;
+                data.XianYuanGrantFloor = -1;
             }
         );
     }
@@ -256,6 +259,67 @@ public static class ApertureSystem
                 if (d.ShaZhaoDerivationGrantFloor != currentFloor)
                 {
                     d.ShaZhaoDerivationGrantFloor = currentFloor;
+                }
+            }
+        );
+    }
+
+    /// <summary>
+    /// 空窍六转（仙窍）起，每场战斗开始时把对应档位的"仙元"货币牌加入
+    /// 蛊手牌堆：不占起手抽牌，也不占蛊牌补位槽（见
+    /// <c>GuCardPileSystem.CountActiveGu</c>）。同一运行层数只发放一次（重连安全）。
+    /// </summary>
+    internal static async Task HandleXianYuanGrantAsync(Player player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+
+        if (!IsInitialized || FindApertureRelic(player) == null)
+        {
+            return;
+        }
+
+        ApertureRunData data = GetState(player);
+
+        if (data.Rank < ApertureProgression.ImmortalRank)
+        {
+            return;
+        }
+
+        if (player.Creature.CombatState is not { } combatState)
+        {
+            return;
+        }
+
+        int currentFloor = player.RunState.TotalFloor;
+
+        if (data.XianYuanGrantFloor == currentFloor)
+        {
+            return;
+        }
+
+        if (ImmortalEssenceSystem.GetEssenceCardForRank(data.Rank) is not
+            { } essenceModel)
+        {
+            return;
+        }
+
+        CardModel essence = combatState.CreateCard(essenceModel, player);
+
+        await CardPileCmd.AddGeneratedCardToCombat(
+            essence,
+            GuCardPileSystem.ActivePileType,
+            player
+        );
+
+        _savedData!.Modify(
+            player,
+            d =>
+            {
+                d.Normalize();
+
+                if (d.XianYuanGrantFloor != currentFloor)
+                {
+                    d.XianYuanGrantFloor = currentFloor;
                 }
             }
         );
