@@ -232,7 +232,7 @@ public static class GuCardPileSystem
             CardPile active = ActivePileType.GetPile(owner);
             foreach (CardModel card in state.Cards)
             {
-                if (active.Cards.Count >= ActiveCapacity ||
+                if (CountActiveGu(active) >= ActiveCapacity ||
                     card.Pile?.Type != StoragePileType)
                 {
                     continue;
@@ -318,7 +318,7 @@ public static class GuCardPileSystem
         CardPile active = ActivePileType.GetPile(owner);
         CardPile storage = StoragePileType.GetPile(owner);
 
-        while (active.Cards.Count < ActiveCapacity && storage.Cards.Count > 0)
+        while (CountActiveGu(active) < ActiveCapacity && storage.Cards.Count > 0)
         {
             CardModel next = storage.Cards.First();
             CardPileAddResult result = await CardPileCmd.Add(
@@ -380,4 +380,14 @@ public static class GuCardPileSystem
             Initialize();
         }
     }
+
+    /// <summary>
+    /// 蛊手牌容量只统计真正的蛊牌。
+    ///
+    /// 六转起固定停在蛊手牌堆里的仙元牌不占补位槽：蛊手牌的语义是"最多 5 张可催动蛊牌"
+    /// （见 `GU_ZHEN_REN_RUBILD_CARDPILE_GU_ACTIVE.description`），仙元牌既不是蛊牌也不能被"催动"，
+    /// 若占用槽位会平白压低六转之后的蛊牌上限。
+    /// </summary>
+    private static int CountActiveGu(CardPile active) =>
+        active.Cards.Count(static card => card is IGuCard);
 }

@@ -26,8 +26,8 @@ public static class ApertureProgression
 
     /// <summary>
     /// 元气容量的最大值，即六转（<see cref="ImmortalRank"/>）对应的容量。
-    /// 六转进入仙窍后元气不再随转数提升：蛊牌从六转起改消耗仙元，
-    /// 元气只作为凡窍阶段的资源，容量与恢复双双封顶（上限 6、每回合 3）。
+    /// 六转进入仙窍后元气不再随转数提升（容量封顶 6、每回合恢复封顶 3）：
+    /// 玩家从六转起改用仙元牌补充战力，而六转及以上的蛊牌在元气之外**额外**消耗仙元单位。
     /// 供副资源定义用作 hardMaxAmount：即使遗物改写上限的钩子缺席，也不会超出已实现曲线。
     /// 必须与 <see cref="YuanQiCapacityByRank"/> 的最大值（即 [6] = 6）保持一致。
     /// </summary>
@@ -65,7 +65,7 @@ public static class ApertureProgression
 
     /// <summary>
     /// 空窍转数对应的元气容量上限，曲线 3、4、4、5、5、6、6、6、6。
-    /// 六转（仙窍）之后不再提升：蛊牌从六转起改消耗仙元，元气不再是仙窍阶段的主力资源。
+    /// 六转（仙窍）之后不再提升：玩家改用仙元牌续航，蛊牌则在元气之外额外消耗仙元。
     /// </summary>
     private static readonly IReadOnlyDictionary<int, int>
         YuanQiCapacityByRank = new Dictionary<int, int>

@@ -23,6 +23,12 @@ public static class GuCardRewardRules
             return false;
         }
 
+        // 仙元牌同样点名拦下：它们是六转起按空窍转数在战斗内生成的货币牌。
+        if (candidate is AbstractXianYuanCard)
+        {
+            return false;
+        }
+
         if (candidate is not IGuCard)
         {
             return false;

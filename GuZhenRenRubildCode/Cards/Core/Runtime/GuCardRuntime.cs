@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Models;
 using STS2RitsuLib.Combat.SecondaryResources;
 using STS2RitsuLib.Utils;
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.ImmortalEssence;
 
 namespace GuZhenRenRubild.Cards.Core.Runtime;
 
@@ -61,6 +62,12 @@ public static class GuCardRuntime
         PileType? pileType = card.Pile?.Type;
         if (pileType != GuCardPileSystem.ActivePileType &&
             pileType != PileType.Hand)
+        {
+            return false;
+        }
+
+        // 六转及以上还要额外付得起仙元（催动单位）；玩家的气泡提醒由 XianYuanWarningPatch 负责。
+        if (!ImmortalEssenceSystem.CanPayActivation(card))
         {
             return false;
         }

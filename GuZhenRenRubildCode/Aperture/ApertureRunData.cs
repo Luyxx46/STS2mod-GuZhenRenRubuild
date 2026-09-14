@@ -55,6 +55,12 @@ public sealed class ApertureRunData
     /// <summary>本场战斗中已经成功完成的杀招推演次数。</summary>
     public int ShaZhaoDerivationsThisCombat { get; set; }
 
+    /// <summary>
+    /// 已经发放过"仙元牌"的运行层数；-1 表示本场战斗尚未发放。
+    /// 空窍六转起每场战斗发放一张对应档次的仙元牌，放在蛊手牌堆的固定位上。
+    /// </summary>
+    public int XianYuanGrantFloor { get; set; } = -1;
+
     public bool NeedsNormalization()
     {
         int normalizedRank = Math.Clamp(
@@ -73,6 +79,7 @@ public sealed class ApertureRunData
         // 杀招推演进度只在一个战斗内有效，越界值一律重新规范化。
         if (ActiveCombatFloor < -1 ||
             ShaZhaoDerivationGrantFloor < -1 ||
+            XianYuanGrantFloor < -1 ||
             ShaZhaoDerivationsThisCombat < 0 ||
             ShaZhaoDerivationsThisCombat >
                 ApertureProgression.ShaZhaoDerivationMaxPerCombat)
@@ -125,6 +132,7 @@ public sealed class ApertureRunData
 
         ActiveCombatFloor = Math.Max(-1, ActiveCombatFloor);
         ShaZhaoDerivationGrantFloor = Math.Max(-1, ShaZhaoDerivationGrantFloor);
+        XianYuanGrantFloor = Math.Max(-1, XianYuanGrantFloor);
         ShaZhaoDerivationsThisCombat = Math.Clamp(
             ShaZhaoDerivationsThisCombat,
             0,
