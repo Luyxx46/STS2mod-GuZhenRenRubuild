@@ -42,6 +42,9 @@ public partial class Entry
         new(nameof(ShaZhaoBindingPatch), ShaZhaoBindingPatch.Initialize, ShaZhaoBindingPatch.Uninitialize),
         new(nameof(CompanionDeckLifecyclePatch), CompanionDeckLifecyclePatch.Initialize, CompanionDeckLifecyclePatch.Uninitialize),
         new(nameof(CompanionMutationProtectionPatch), CompanionMutationProtectionPatch.Initialize, CompanionMutationProtectionPatch.Uninitialize),
+        // 强化槽补丁只依赖 CompanionEnhancementService 的静态 API 与反射到的原版 UI 成员，
+        // 不依赖其它组件的初始化顺序，因此紧跟在同属伴生体系的保护补丁之后。
+        new(nameof(CompanionEnhancementSlotPatch), CompanionEnhancementSlotPatch.Initialize, CompanionEnhancementSlotPatch.Uninitialize),
         new(nameof(GuCardRewardPatch), GuCardRewardPatch.Initialize, GuCardRewardPatch.Uninitialize),
         new(nameof(GuRankRewardPatch), GuRankRewardPatch.Initialize, GuRankRewardPatch.Uninitialize),
         new(nameof(GuRankUpPreviewPatch), GuRankUpPreviewPatch.Initialize, GuRankUpPreviewPatch.Uninitialize),
