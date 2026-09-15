@@ -25,3 +25,5 @@ artifacts/
 .mnemon/
 # AgentTeams 插件的团队状态与邮箱：本机运行时产物，不入库
 .agent-teams/
+# Mimosa 安全钩子的会话状态目录：本机运行时产物，不入库
+.mimosa/
