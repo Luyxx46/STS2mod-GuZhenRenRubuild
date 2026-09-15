@@ -23,7 +23,7 @@ namespace GuZhenRenRubild.Cards.Core.Abstractions;
 /// 1. 旧版放在**普通手牌**并靠 <c>Retain</c> 跨回合保留；本版直接停在蛊手牌堆的固定位；
 /// 2. 旧版 `IsPlayable => false` 且耗尽即 `Exhaust` 消失；本版可主动打出，且耗尽后保留成死牌。
 /// </summary>
-public abstract class AbstractXianYuanCard : ModCardTemplate
+public abstract class AbstractXianYuanCard : ModCardTemplate, IGuHandPinnedCard
 {
     protected AbstractXianYuanCard()
         : base(
@@ -35,6 +35,9 @@ public abstract class AbstractXianYuanCard : ModCardTemplate
         )
     {
     }
+
+    /// <summary>仙元牌固定悬停于蛊手牌最左端。</summary>
+    public int GuHandOrderRank => 0;
 
     /// <summary>本档仙元牌一共提供多少个"催动单位"。</summary>
     public abstract int ActivationUnits { get; }

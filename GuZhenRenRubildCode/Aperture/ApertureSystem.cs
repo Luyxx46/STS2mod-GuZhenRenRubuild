@@ -200,8 +200,8 @@ public static class ApertureSystem
     }
 
     /// <summary>
-    /// 空窍三转起，每场战斗开始时把"杀招推演"直接加入手牌，不占起手抽牌。
-    /// 同一运行层数只发放一次（重连安全）。
+    /// 空窍三转起，每场战斗开始时把"杀招推演"悬停到蛊手牌固定位（仙元牌之后），
+    /// 不占起手抽牌，也不占蛊牌补位槽。同一运行层数只发放一次（重连安全）。
     ///
     /// 杀招池为空时不发放：此时没有任何可推演的目标，
     /// 发牌只会让玩家拿到一张必然失败的系统牌。
@@ -246,9 +246,12 @@ public static class ApertureSystem
 
         await CardPileCmd.AddGeneratedCardToCombat(
             derivation,
-            PileType.Hand,
+            GuCardPileSystem.ActivePileType,
             player
         );
+
+        // 固定位排序：杀招推演牌必须排在仙元牌之后（发放顺序在它之前执行）。
+        GuCardPileSystem.NormalizePinnedCardOrder(player);
 
         _savedData!.Modify(
             player,
@@ -311,6 +314,9 @@ public static class ApertureSystem
             player
         );
 
+        // 固定位排序：仙元牌必须保持在蛊手牌最左端。
+        GuCardPileSystem.NormalizePinnedCardOrder(player);
+
         _savedData!.Modify(
             player,
             d =>
@@ -326,10 +332,10 @@ public static class ApertureSystem
     }
 
     /// <summary>
-    /// 推演成功后登记次数。八转起每场最多两次，第一次成功后再把第二张
-    /// "杀招推演"放入弃牌堆。
+    /// 推演成功后登记次数（观测用）。八转起每场 2 次的上限改由
+    /// "杀招推演"牌自带的催动次数表达，不再单独补发第二张牌。
     /// </summary>
-    internal static async Task RegisterShaZhaoDerivationAsync(Player player)
+    internal static void RegisterShaZhaoDerivation(Player player)
     {
         ArgumentNullException.ThrowIfNull(player);
 
@@ -354,24 +360,6 @@ public static class ApertureSystem
                 d.Normalize();
                 d.ShaZhaoDerivationsThisCombat = Math.Max(0, completed);
             }
-        );
-
-        if (data.Rank < ApertureProgression.ShaZhaoDerivationSecondRank ||
-            completed >= ApertureProgression.ShaZhaoDerivationMaxPerCombat ||
-            player.Creature.CombatState is not { } combatState)
-        {
-            return;
-        }
-
-        CardModel second = combatState.CreateCard(
-            ModelDb.Card<ShaZhaoTuiYan>(),
-            player
-        );
-
-        await CardPileCmd.AddGeneratedCardToCombat(
-            second,
-            PileType.Discard,
-            player
         );
     }
 

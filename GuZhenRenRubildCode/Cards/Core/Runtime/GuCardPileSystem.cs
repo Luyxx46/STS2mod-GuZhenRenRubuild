@@ -251,6 +251,8 @@ public static class GuCardPileSystem
                     break;
                 }
             }
+
+            NormalizePinnedCardOrder(owner);
         }
         finally
         {
@@ -336,6 +338,69 @@ public static class GuCardPileSystem
                 break;
             }
         }
+
+        NormalizePinnedCardOrder(owner);
+    }
+
+    /// <summary>
+    /// 蛊手牌固定位排序：悬停系统牌（<see cref="IGuHandPinnedCard"/>）按
+    /// <see cref="IGuHandPinnedCard.GuHandOrderRank"/> 升序稳定排列在最左端
+    /// （仙元牌秩 0 在最左，杀招推演牌秩 1 紧随其后），其余蛊牌保持现有
+    /// 相对顺序排在右侧。
+    ///
+    /// 悬停牌不占补位槽（见 <see cref="CountActiveGu"/>），这里只约束展示
+    /// 顺序；已经有序时不做任何操作，避免打乱进行中的出牌动画。
+    /// </summary>
+    public static void NormalizePinnedCardOrder(Player owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+
+        CardPile active = ActivePileType.GetPile(owner);
+        List<CardModel> current = [.. active.Cards];
+        if (current.Count == 0)
+        {
+            return;
+        }
+
+        // LINQ OrderBy 是稳定排序：同秩牌（含全部普通蛊牌）保持原有相对顺序。
+        List<CardModel> ordered = [.. current.OrderBy(GetPinnedOrderRank)];
+        for (int index = 0; index < current.Count; index++)
+        {
+            if (!ReferenceEquals(current[index], ordered[index]))
+            {
+                RebuildPileOrder(active, current, ordered);
+                return;
+            }
+        }
+    }
+
+    private static int GetPinnedOrderRank(CardModel card) =>
+        card is IGuHandPinnedCard pinned ? pinned.GuHandOrderRank : int.MaxValue;
+
+    // 用内部牌堆接口静默重建顺序，完成后只发送一次内容变更通知。
+    private static void RebuildPileOrder(
+        CardPile active,
+        List<CardModel> current,
+        List<CardModel> ordered
+    )
+    {
+        foreach (CardModel card in current)
+        {
+            active.RemoveInternal(card, silent: true);
+        }
+
+        foreach (CardModel card in ordered)
+        {
+            active.AddInternal(card, silent: true);
+        }
+
+        Entry.Logger.Info(
+            $"[GuHand] 固定位排序完成：{string.Join(
+                " -> ",
+                ordered.Select(static card => card.Id.Entry)
+            )}"
+        );
+        active.InvokeContentsChanged();
     }
 
     // 用内部牌堆接口执行无动画移动，并在完成后统一触发内容变更事件。

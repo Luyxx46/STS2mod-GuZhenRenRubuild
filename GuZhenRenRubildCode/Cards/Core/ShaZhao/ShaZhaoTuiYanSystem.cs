@@ -179,8 +179,8 @@ internal static class ShaZhaoTuiYanSystem
 
         await GuCardPileSystem.RefillActiveAsync(player, skipVisuals: false);
 
-        // 登记本次成功推演：八转起会在这里补发第二张推演牌。
-        await ApertureSystem.RegisterShaZhaoDerivationAsync(player);
+        // 登记本次成功推演（观测用）；每场可推演次数由推演牌自带的催动次数限制。
+        ApertureSystem.RegisterShaZhaoDerivation(player);
 
         Entry.Logger.Info(
             $"[杀招推演] 成功推演 {shaZhao.GetType().Name}：" +
