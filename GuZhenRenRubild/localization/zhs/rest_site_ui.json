@@ -11,5 +11,6 @@
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.success": "{Materials}\n→ [gold]{Result}[/gold]\n\n结果转数：{Rank} 转",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.noRecipe": "当前牌组中没有能够完成的合练配方。",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.unmatchedMaterials": "所选材料无法合练：\n{Materials}\n\n请检查材料种类和数量。",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.xianGuConflict": "牌组中已有同名仙蛊，本次合练结果与它冲突，无法合成。\n\n合练没有消耗任何材料。",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.exception": "合练执行时发生异常，材料与牌组记录已尝试恢复。\n\n{Message}"
 }

@@ -47,6 +47,9 @@ public partial class Entry
         new(nameof(CompanionEnhancementSlotPatch), CompanionEnhancementSlotPatch.Initialize, CompanionEnhancementSlotPatch.Uninitialize),
         new(nameof(GuCardRewardPatch), GuCardRewardPatch.Initialize, GuCardRewardPatch.Uninitialize),
         new(nameof(GuRankRewardPatch), GuRankRewardPatch.Initialize, GuRankRewardPatch.Uninitialize),
+        // 仙蛊唯一性补丁只挂在 Hook.ShouldAddToDeck 上，读取奖励赋阶与升炼写下的
+        // 转数/成仙登记，因此必须晚于 GuRankRewardPatch 启动。
+        new(nameof(XianGuUniquenessPatch), XianGuUniquenessPatch.Initialize, XianGuUniquenessPatch.Uninitialize),
         new(nameof(GuRankUpPreviewPatch), GuRankUpPreviewPatch.Initialize, GuRankUpPreviewPatch.Uninitialize),
         new(nameof(GuCombatPatch), GuCombatPatch.Initialize, GuCombatPatch.Uninitialize),
         // 蛊手牌布局补丁只依赖牌堆注册结果，必须晚于 GuCardPileSystem 启动。

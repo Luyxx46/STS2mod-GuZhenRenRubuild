@@ -143,7 +143,7 @@ internal static class GuRankUpPreviewSupport
                 StringComparer.Ordinal
             );
 
-        if (!gu.TryIncreaseGuRank())
+        if (!gu.TryIncreaseGuRankForPreview())
         {
             return false;
         }
@@ -218,6 +218,7 @@ internal static class GuRankUpPreviewSupport
 
         int slotCost = GuRankUpRules.GetSlotCost(gu);
 
+        // CanRankUp 已包含仙蛊唯一性判定（整局已有同名仙蛊时不能再升到六转）。
         return slotCost <= context.RemainingSlots &&
             GuRankUpRules.CanRankUp(gu);
     }

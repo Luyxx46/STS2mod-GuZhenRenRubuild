@@ -1,3 +1,4 @@
+using GuZhenRenRubild.Cards.Core.Rules;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Combat;
 using GuZhenRenRubild.Common.Text;
@@ -151,7 +152,14 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
 
     // 为尚未初始化的蛊牌抽取初始品阶。均值会随楼层缓慢提高，但最高只提升到 3；标准差固定为 2。
     // 采样区间向整数边界各扩展 0.5，再四舍五入为整数，可让边缘品阶也获得自然的概率质量。
-    internal bool TryAssignInitialRank(Rng rng, int totalFloor)
+    //
+    // maximumRank 用于仙蛊唯一性封顶：牌组中已有同名仙蛊时，调用方会把上限压到五转，
+    // 使奖励永远不会直接产出第二张同名仙蛊。传入 null 时行为与旧逻辑逐位一致。
+    internal bool TryAssignInitialRank(
+        Rng rng,
+        int totalFloor,
+        int? maximumRank = null
+    )
     {
         if (!NeedsInitialRankAssignment)
         {
@@ -163,13 +171,19 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
         const double meanPerFloor = 0.05;
         const double standardDeviation = 2.0;
 
+        int rankCap = Math.Clamp(
+            maximumRank ?? MaxGuRank,
+            MinimumGuRank,
+            MaxGuRank
+        );
+
         double mean = Math.Clamp(
             minimumMean + Math.Max(0, totalFloor - 1) * meanPerFloor,
             minimumMean,
-            Math.Min(maximumMean, MaxGuRank)
+            Math.Min(maximumMean, rankCap)
         );
         double sampleMin = MinimumGuRank - 0.5;
-        double sampleMax = MaxGuRank + 0.5;
+        double sampleMax = rankCap + 0.5;
         double sampleRange = sampleMax - sampleMin;
         double sampled = rng.NextGaussianDouble(
             (mean - sampleMin) / sampleRange,
@@ -183,7 +197,31 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     }
 
     // 将品阶提升一级；达到最大品阶后不再提升，并通过返回值告诉调用方是否真的发生了变化。
+    //
+    // 升入仙蛊（六转及以上）时必须过唯一性仲裁：整局中已有同名仙蛊时本次升转会被拒绝，
+    // 卡牌保持原转数不变，调用方据此提示玩家或直接不显示该候选。
     internal bool TryIncreaseGuRank()
+    {
+        if (GuRank >= MaxGuRank)
+        {
+            return false;
+        }
+
+        // 先算出目标转数：提交回调内不能再读 GuRank（那时它已经变了）。
+        int targetRank = GuRank + 1;
+
+        return GuXianGuRules.TryCommitGuRankIncrease(
+            this,
+            targetRank,
+            () => SetGuRank(targetRank)
+        );
+    }
+
+    // 升炼预览专用：只改本实例的显示转数，不做唯一性仲裁、不登记仙蛊。
+    //
+    // 原生升炼预览作用在 RunState.CloneCard 出来的克隆实例上，若走 TryIncreaseGuRank，
+    // 预览就会触发真实仲裁（甚至降转别人的仙蛊），因此这里必须是独立的无仲裁入口。
+    internal bool TryIncreaseGuRankForPreview()
     {
         if (GuRank >= MaxGuRank)
         {
@@ -192,6 +230,13 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
 
         SetGuRank(GuRank + 1);
         return true;
+    }
+
+    // 仙蛊唯一性仲裁专用：把已经冲突的同名仙蛊恢复到五转。
+    // 不触发升转奖励，只刷新依赖转数的派生状态。
+    internal void ReconcileGuRankForUniqueness(int rank)
+    {
+        SetGuRank(Math.Clamp(rank, MinimumGuRank, MaxGuRank));
     }
 
     // 只读界面（配方大全等）需要展示"任意转数下的卡面与说明"。

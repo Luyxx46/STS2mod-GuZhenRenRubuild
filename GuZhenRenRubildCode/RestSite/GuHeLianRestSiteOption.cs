@@ -3,6 +3,7 @@ using System.Globalization;
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Catalog;
 using GuZhenRenRubild.Cards.Core.Recipes;
+using GuZhenRenRubild.Cards.Core.Rules;
 
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Commands;
@@ -182,6 +183,32 @@ public sealed class GuHeLianRestSiteOption : GuRestSiteOptionBase
             ))
             .OrderBy(snapshot => snapshot.DeckIndex)
             .ToList();
+
+        // 仙蛊唯一性预检：结果若是仙蛊，且牌组中还有另一张同名仙蛊（本次要消耗的
+        // 材料会先从牌组移除，因此不计入冲突），就必须在这里拦下——否则
+        // CardPileCmd.Add 会被入牌仲裁拒绝，白白走一遍"消耗材料再回滚"。
+        if (GuXianGuRules.IsXianGu(result) &&
+            GuXianGuRules.HasSameXianGu(
+                Owner.RunState,
+                result,
+                selectedCards.ToHashSet()
+            ))
+        {
+            // 结果实例已经由 RunState.CreateCard 登记进运行状态，而它从未进入任何
+            // 牌堆；预检失败必须按 HeLianRecipeRegistry 的约定把它移出状态，
+            // 否则会留下一张无法再被引用的悬空卡牌。
+            Owner.RunState.RemoveCard(result);
+
+            Entry.Logger.Info(
+                $"合练被仙蛊唯一性拦下：{result.Id} 与牌组中既有同名仙蛊冲突。"
+            );
+
+            ShowLocalFeedback(
+                success: false,
+                "feedback.xianGuConflict"
+            );
+            return false;
+        }
 
         var playerHistory = Owner.RunState
             .CurrentMapPointHistoryEntry?

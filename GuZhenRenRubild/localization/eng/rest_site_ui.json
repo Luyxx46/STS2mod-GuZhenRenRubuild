@@ -11,5 +11,6 @@
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.success": "{Materials}\n→ [gold]{Result}[/gold]\n\nResult rank: {Rank}",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.noRecipe": "There is no craftable fusion recipe in the current deck.",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.unmatchedMaterials": "The selected materials do not match a fusion recipe:\n{Materials}\n\nCheck the material types and quantities.",
+  "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.xianGuConflict": "Your deck already contains an Immortal Gu with the same name, so this fusion result would conflict with it and cannot be crafted.\n\nNo materials were consumed.",
   "OPTION_GU_ZHEN_REN_RUBILD_HE_LIAN.feedback.exception": "Fusion failed during execution. The materials and deck history were restored where possible.\n\n{Message}"
 }

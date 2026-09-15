@@ -1,5 +1,6 @@
 using System.Reflection;
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.Rules;
 using GuZhenRenRubild.Common.Patching;
 using GuZhenRenRubild.Common.Reflection;
 using HarmonyLib;
@@ -68,10 +69,31 @@ internal static class GuRankRewardPatch
                 continue;
             }
 
+            // 仙蛊唯一性封顶：整局中已有同名仙蛊时，本次赋阶上限压到五转，
+            // 使奖励永远不会直接产出第二张同名仙蛊（拿到手后再升转也会被升炼仲裁拦下）。
+            int maximumRank = GuXianGuRules.HasSameXianGu(
+                player.RunState,
+                card
+            )
+                ? Math.Min(
+                    gu.MaxGuRank,
+                    GuXianGuRules.XianGuRank - 1
+                )
+                : gu.MaxGuRank;
+
             // 每张真正需要初始化的蛊牌只推进主随机流一次，再用得到的种子建立独立随机器。
             // 这样奖励界面重建或 Populate 被重复调用时，已经初始化的卡不会再次消耗随机数，结果仍保持确定性。
+            // 封顶只改变采样区间，不额外消耗随机数，随机流的推进次数保持不变。
             gu.TryAssignInitialRank(
                 new Rng(stream.NextUnsignedInt()),
+                player.RunState.TotalFloor,
+                maximumRank
+            );
+
+            // 六转及以上的奖励牌一诞生就是仙蛊，必须立刻登记首次成仙楼层；
+            // 否则它会被当成"未登记的旧档仙蛊"，反过来把更早的合法仙蛊压掉。
+            GuXianGuRules.RegisterXianGuClaim(
+                gu,
                 player.RunState.TotalFloor
             );
         }
