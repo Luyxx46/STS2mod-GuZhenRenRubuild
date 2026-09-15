@@ -37,18 +37,25 @@ public static class CompanionNetworkMap
                 continue;
             }
 
-            CardModel? companion = player.Deck.Cards.FirstOrDefault(card =>
-                card is ICompanionCard && CompanionPairState.Get(card) == pairId
-            );
-            if (companion == null)
+            List<CardModel> companions = player.Deck.Cards
+                .Where(card => card is ICompanionCard &&
+                               CompanionPairState.Get(card) == pairId)
+                .ToList();
+            if (companions.Count == 0)
             {
                 continue;
             }
 
+            // 一只来源可对应多张伴生：正向映射取牌组顺序最前的一张，
+            // 反向映射为每张伴生都登记来源，保证任意一张都能反查。
             uint sourceId = NetDeckCard.FromModel(source).DeckIndex;
-            uint companionId = NetDeckCard.FromModel(companion).DeckIndex;
-            map.DeckForward[sourceId] = companionId;
-            map.DeckReverse[companionId] = sourceId;
+            map.DeckForward[sourceId] =
+                NetDeckCard.FromModel(companions[0]).DeckIndex;
+            foreach (CardModel companion in companions)
+            {
+                map.DeckReverse[NetDeckCard.FromModel(companion).DeckIndex] =
+                    sourceId;
+            }
         }
     }
 
@@ -72,28 +79,49 @@ public static class CompanionNetworkMap
                 continue;
             }
 
-            CardModel? permanentCompanion = player.Deck.Cards.FirstOrDefault(card =>
-                card is ICompanionCard && CompanionPairState.Get(card) == pairId
-            );
-            if (permanentCompanion == null)
+            List<CardModel> permanentCompanions = player.Deck.Cards
+                .Where(card => card is ICompanionCard &&
+                               CompanionPairState.Get(card) == pairId)
+                .ToList();
+            if (permanentCompanions.Count == 0)
             {
                 continue;
             }
 
-            CardModel? combatCompanion = combatCards.FirstOrDefault(card =>
-                ReferenceEquals(card.DeckVersion, permanentCompanion)
+            // 多伴生来源：战斗正向映射取第一张伴生，反向为每张都登记来源。
+            CardModel? firstCombatCompanion = combatCards.FirstOrDefault(card =>
+                ReferenceEquals(card.DeckVersion, permanentCompanions[0])
             );
-            if (combatCompanion == null ||
+            if (firstCombatCompanion == null ||
                 !NetCombatCardDb.Instance.TryGetCardId(combatSource, out uint sourceId) ||
-                !NetCombatCardDb.Instance.TryGetCardId(combatCompanion, out uint companionId))
+                !NetCombatCardDb.Instance.TryGetCardId(
+                    firstCombatCompanion,
+                    out uint firstCompanionId))
             {
                 continue;
             }
 
-            map.CombatForward[sourceId] = companionId;
-            map.CombatReverse[companionId] = sourceId;
+            map.CombatForward[sourceId] = firstCompanionId;
+            foreach (CardModel permanentCompanion in permanentCompanions)
+            {
+                CardModel? combatCompanion = combatCards.FirstOrDefault(card =>
+                    ReferenceEquals(card.DeckVersion, permanentCompanion)
+                );
+                if (combatCompanion == null ||
+                    !NetCombatCardDb.Instance.TryGetCardId(
+                        combatCompanion,
+                        out uint companionId))
+                {
+                    continue;
+                }
+
+                map.CombatReverse[companionId] = sourceId;
+            }
+
             Entry.Logger.Info(
-                $"[Companion/CombatMap] sourceCombatId={sourceId} companionCombatId={companionId}"
+                $"[Companion/CombatMap] sourceCombatId={sourceId} " +
+                $"companionCount={permanentCompanions.Count} " +
+                $"companionCombatId={firstCompanionId}"
             );
         }
     }

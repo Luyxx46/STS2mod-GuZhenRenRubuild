@@ -13,8 +13,7 @@ public static class CompanionRelationshipService
     internal readonly record struct TransformSnapshot(
         Player Owner,
         int PairId,
-        CardModel? Companion,
-        Type? CompanionType,
+        IReadOnlyList<CardModel> Companions,
         bool OriginalWasSource
     );
 
@@ -98,13 +97,31 @@ public static class CompanionRelationshipService
 
     public static void RemovePairForSource(CardModel sourceGu)
     {
-        if (sourceGu.Owner == null ||
-            !TryFindPermanentCompanion(sourceGu, out CardModel companion))
+        if (sourceGu.Owner == null)
         {
             return;
         }
 
-        RemoveManagedCompanion(companion);
+        int pairId = CompanionPairState.Get(sourceGu);
+        if (pairId <= 0)
+        {
+            return;
+        }
+
+        List<CardModel> companions = sourceGu.Owner.Deck.Cards
+            .Where(card => card is ICompanionCard &&
+                           CompanionPairState.Get(card) == pairId)
+            .ToList();
+        if (companions.Count == 0)
+        {
+            return;
+        }
+
+        foreach (CardModel companion in companions)
+        {
+            RemoveManagedCompanion(companion);
+        }
+
         CompanionPairState.Set(sourceGu, 0);
         CompanionNetworkMap.RebuildDeckMap(sourceGu.Owner);
     }
@@ -116,16 +133,25 @@ public static class CompanionRelationshipService
         Player owner = original.Owner;
         if (original is not ICompanionSourceGuCard)
         {
-            return new TransformSnapshot(owner, 0, null, null, false);
+            return new TransformSnapshot(owner, 0, [], false);
         }
 
         int pairId = CompanionPairState.Get(original);
-        TryFindPermanentCompanion(original, out CardModel companion);
+        List<CardModel> companions = [];
+        if (pairId > 0)
+        {
+            companions.AddRange(
+                owner.Deck.Cards.Where(
+                    card => card is ICompanionCard &&
+                            CompanionPairState.Get(card) == pairId
+                )
+            );
+        }
+
         return new TransformSnapshot(
             owner,
             pairId,
-            companion,
-            companion?.GetType(),
+            companions,
             true
         );
     }
@@ -142,19 +168,26 @@ public static class CompanionRelationshipService
         }
 
         if (replacement is ICompanionSourceGuCard newSource &&
-            snapshot.Companion != null &&
-            snapshot.CompanionType == newSource.Companion.CardType)
+            snapshot.Companions.Count > 0 &&
+            snapshot.Companions.All(
+                companion =>
+                    companion.GetType() == newSource.Companion.CardType))
         {
             // 伴生类型不变：把 PairId 转移给新来源，保留原伴生实例、升级和附魔。
+            // 超出新增数量的多余伴生由后续 ReconcileDeck 按孤儿清理，缺失部分自动补建。
             CompanionPairState.Set(replacement, snapshot.PairId);
-            CompanionPairState.Set(snapshot.Companion, snapshot.PairId);
+            foreach (CardModel companion in snapshot.Companions)
+            {
+                CompanionPairState.Set(companion, snapshot.PairId);
+            }
+
             return;
         }
 
         // 新来源不再需要伴生，或需要不同类型：旧伴生生命周期结束。
-        if (snapshot.Companion != null)
+        foreach (CardModel companion in snapshot.Companions)
         {
-            RemoveManagedCompanion(snapshot.Companion);
+            RemoveManagedCompanion(companion);
         }
 
         CompanionPairState.Set(replacement, 0);
@@ -199,37 +232,42 @@ public static class CompanionRelationshipService
             ICompanionSourceGuCard definition = (ICompanionSourceGuCard)source;
             int pairId = CompanionPairState.Get(source);
             Type expectedType = definition.Companion.CardType;
+            int expectedCount = Math.Max(1, definition.Companion.Count);
 
-            CardModel? companion = companions.FirstOrDefault(card =>
-                !usedCompanions.Contains(card) &&
-                card.GetType() == expectedType &&
-                CompanionPairState.Get(card) == pairId
-            );
-
-            // 迁移旧存档时优先复用未绑定/孤儿的正确类型伴生，保留升级与附魔。
-            companion ??= companions.FirstOrDefault(card =>
-                !usedCompanions.Contains(card) &&
-                card.GetType() == expectedType &&
-                (CompanionPairState.Get(card) <= 0 ||
-                 !claimedSourcePairs.Contains(CompanionPairState.Get(card)))
-            );
-
-            if (companion == null)
+            for (int slot = 0; slot < expectedCount; slot++)
             {
-                companion = CreateCompanion(player, source, expectedType, pairId);
-                deckChanged = true;
-                companions = companions.Append(companion).ToArray();
-                Entry.Logger.Info(
-                    $"[Companion/Reconcile] source={source.Id} pair={pairId} " +
-                    $"action=CreateCompanion companion={companion.Id}"
+                CardModel? companion = companions.FirstOrDefault(card =>
+                    !usedCompanions.Contains(card) &&
+                    card.GetType() == expectedType &&
+                    CompanionPairState.Get(card) == pairId
                 );
-            }
-            else
-            {
-                CompanionPairState.Set(companion, pairId);
-            }
 
-            usedCompanions.Add(companion);
+                // 迁移旧存档时优先复用未绑定/孤儿的正确类型伴生，保留升级与附魔。
+                companion ??= companions.FirstOrDefault(card =>
+                    !usedCompanions.Contains(card) &&
+                    card.GetType() == expectedType &&
+                    (CompanionPairState.Get(card) <= 0 ||
+                     !claimedSourcePairs.Contains(CompanionPairState.Get(card)))
+                );
+
+                if (companion == null)
+                {
+                    companion = CreateCompanion(player, source, expectedType, pairId);
+                    deckChanged = true;
+                    companions = companions.Append(companion).ToArray();
+                    Entry.Logger.Info(
+                        $"[Companion/Reconcile] source={source.Id} pair={pairId} " +
+                        $"slot={slot + 1}/{expectedCount} " +
+                        $"action=CreateCompanion companion={companion.Id}"
+                    );
+                }
+                else
+                {
+                    CompanionPairState.Set(companion, pairId);
+                }
+
+                usedCompanions.Add(companion);
+            }
         }
 
         // 所有没有来源的系统管理伴生都属于孤儿；迁移复用已经在上一步优先完成。
@@ -285,17 +323,10 @@ public static class CompanionRelationshipService
         return companion;
     }
 
-    private static bool TryFindPermanentCompanion(
-        CardModel source,
-        out CardModel companion
-    )
-    {
-        return TryFindDeckPartner<ICompanionCard>(source, out companion);
-    }
-
     /// <summary>
     /// 在来源牌所在玩家的永久牌组里，按 PairId 找到同组的另一侧牌。
     /// 来源牌与伴生牌的互相查找只有标记接口不同，因此共用这一个入口。
+    /// 多伴生来源下正向查找返回其中一张（牌组顺序最前的）。
     /// </summary>
     private static bool TryFindDeckPartner<TMarker>(
         CardModel anchor,
