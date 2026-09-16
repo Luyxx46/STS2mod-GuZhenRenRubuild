@@ -1,8 +1,8 @@
 {
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.title": "Moonblade Sharpening",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.description": "Enhancement stacked on the companion card Moonblade each time its parent Gu, Moonlight Gu, is activated: each stack makes Moonblade deal 2 more damage, up to 3 stacks.",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.description": "Enhancement stacked on the companion card Moonblade each time its parent Gu, Moonlight Gu, is activated: each stack makes Moonblade deal 2 more damage, up to 3 stacks. It triggers 3 times per combat and disappears once those uses run out; the next combat requires Moonlight Gu to be activated again.",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.extraCardText": "Deals [blue]2[/blue] more damage per stack.",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.title": "Jade Skin Armor Hardening",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.description": "Enhancement stacked on the companion card Jade Skin Armor each time its parent Gu, Jade Skin Gu, is activated: each stack makes it gain 3 more Block, up to 3 stacks.",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.description": "Enhancement stacked on the companion card Jade Skin Armor each time its parent Gu, Jade Skin Gu, is activated: each stack makes it gain 3 more Block, up to 3 stacks. It triggers 3 times per combat and disappears once those uses run out; the next combat requires Jade Skin Gu to be activated again.",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.extraCardText": "Gains [blue]3[/blue] more Block per stack."
 }

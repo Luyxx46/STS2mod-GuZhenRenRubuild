@@ -12,6 +12,12 @@ namespace GuZhenRenRubild.Cards.Basic.YuPiGu;
 /// </para>
 ///
 /// <para>
+/// <b>可用次数</b>：每场战斗 3 次（<see cref="UsesPerCombat"/>）。每次玉皮甲打出并结算后消耗 1 次，
+/// 3 次用尽即整项清空（卡面强化图标消失），本场不再接受重新授予；下一场战斗需由
+/// <see cref="YuPiGu"/> 重新催动授予。
+/// </para>
+///
+/// <para>
 /// 注意原版钩子的契约：<c>EnchantBlockAdditive</c> 返回的是**增量**而不是「原值 + 增量」
 /// ——前置分发侧是 <c>result += 钩子(...)</c>，返回原值+增量会双倍计算。
 /// </para>
@@ -24,6 +30,9 @@ public sealed class YuPiJiaEnhancement : AbstractCompanionEnhancement
 
     // 强化层数上限：三次催动封顶（服务层挂载时会按此上限夹取层数）。
     public override int MaxAmount => 3;
+
+    // 每场战斗可用次数：打出 3 次玉皮甲后本强化清空。数值改动只需动这一处常量。
+    public override int UsesPerCombat => 3;
 
     // 卡面追加一行说明，让玩家在子卡上直接看到强化效果。
     public override bool HasExtraCardText => true;

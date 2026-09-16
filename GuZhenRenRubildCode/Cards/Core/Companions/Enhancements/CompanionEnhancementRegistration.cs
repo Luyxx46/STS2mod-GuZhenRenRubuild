@@ -1,5 +1,6 @@
 using System.Reflection;
 
+using MultiEnchantmentMod;
 using MultiEnchantmentMod.Api;
 
 // 声明本程序集构建时依赖的 MultiEnchantmentMod 公共 API 版本：
@@ -22,7 +23,10 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// 因此这里在初始化时扫描程序集内全部具体强化类型，统一按
 /// <see cref="StackBehavior.MergeAmount"/> + <see cref="StatusAggregation.SharedAcrossStack"/> 登记
 /// ——语义等价于旧实现「一个强化槽 + 层数」：一个强化类型在卡上只有一个实例，层数记在
-/// <c>Amount</c> 上并显示为图标数量。新增具体强化子类<b>无需</b>改本文件。
+/// <c>Amount</c> 上并显示为图标数量。同时把 <c>OnPlay</c> 的执行策略改成
+/// <see cref="HookExecutionMode.PerLiveInstance"/>：<c>MergeAmount</c> 默认是
+/// <c>MergedTotal</c>（按层数各跑一次），会让「打出一次子卡」扣掉与层数相同的可用次数。
+/// 新增具体强化子类<b>无需</b>改本文件。
 /// </para>
 ///
 /// <para>
@@ -66,6 +70,9 @@ internal static class CompanionEnhancementRegistration
                 MultiEnchantmentApi
                     .Register(type)
                     .Stack(StackBehavior.MergeAmount, StatusAggregation.SharedAcrossStack)
+                    // MergeAmount 的默认执行策略是 MergedTotal：OnPlay 会按层数各跑一次，
+                    // 那样「打出一次子卡」会一次扣掉与层数相同的可用次数。改为每实例一次。
+                    .Execution(p => p.OnPlay(HookExecutionMode.PerLiveInstance))
                     .Commit()
             );
             count++;

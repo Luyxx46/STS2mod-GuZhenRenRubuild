@@ -39,14 +39,20 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// <para>
 /// 落地方式统一走 <see cref="MultiEnchantmentApi.ForceEnchant"/>：它跳过
 /// <see cref="EnchantmentModel.CanEnchant"/> 否决权（强化对该钩子恒返回 false，
-/// 以免玩家从原版事件/遗物/篝火等来源拿到强化），但保留框架的叠层、作用域与通知语义。
+/// 以免玩家从原版事件/遗物/篝火等来源拿到强化），但保留框架的叠层与通知语义。
 /// </para>
 ///
 /// <para>
-/// <b>写入时机与可见性</b>：父蛊催动发生在战斗内，而子卡在战斗中有独立副本。
-/// 因此写入前统一经 <see cref="ResolveAttachmentTarget"/> 把「永久牌组实例」换成
-/// 它的战斗副本 —— 强化在本场战斗立刻可见；又因为前置会把**永久作用域**的挂载镜像回
-/// <c>DeckVersion</c>（即永久牌组实例），持久化与联机同步照常成立。
+/// <b>生命周期（本场战斗专属）</b>：挂载统一施加 <c>EnchantmentScope.UntilCombatEnds</c>，
+/// 即强化只活到本场战斗结束，且<b>不会</b>被镜像进牌组，下一场战斗必须由父蛊重新催动授予；
+/// 可用次数（<see cref="AbstractCompanionEnhancement.UsesPerCombat"/>）按场分账，
+/// 耗尽即整项清空。
+/// </para>
+///
+/// <para>
+/// <b>写入目标</b>：父蛊催动发生在战斗内，而子卡在战斗中有独立副本，因此写入前统一经
+/// <see cref="ResolveAttachmentTarget"/> 把「永久牌组实例」换成它的战斗副本 ——
+/// 强化在本场战斗立刻可见，同时不会把战斗态写进牌组；战斗中若找不到战斗副本则跳过本次挂载。
 /// </para>
 /// </summary>
 public static class CompanionEnhancementService
@@ -144,6 +150,19 @@ public static class CompanionEnhancementService
             return null;
         }
 
+        // 每场战斗的次数已耗尽：本场不再接受新的授予，避免同一场战斗内反复催动刷次数。
+        Type enhancementType = enhancement.GetType();
+        if (current == null &&
+            enhancement.UsesPerCombat > 0 &&
+            CompanionEnhancementUses.Peek(card, enhancementType) == 0)
+        {
+            Entry.Logger.Warn(
+                $"[Companion/Enhancement] card={card.Id} action=Skip " +
+                $"incoming={enhancement.Id} reason=UsesExhaustedThisCombat"
+            );
+            return null;
+        }
+
         // 层数统一夹进 [1, MaxAmount]：首次挂载与后续叠加共用同一约定，
         // 授予方传多大都会被强化自身的上限封顶，不依赖具体子类自行防御。
         int currentAmount = current?.Amount ?? 0;
@@ -157,11 +176,25 @@ public static class CompanionEnhancementService
 
         // 跳过 CanEnchant 否决权（强化恒为 false），叠层/作用域/通知仍由框架处理；
         // 同类型已在卡上时框架走 MergeAmount 合并分支，返回的是那个既有实例。
+        //
+        // 作用域固定为「本场战斗」：战斗结束由前置自动清除，也不会被镜像进牌组，
+        // 因此下一场战斗必须由父蛊重新催动授予。
         EnchantmentModel? applied = MultiEnchantmentApi.ForceEnchant(
             card,
             enhancement,
-            appliedAmount
+            appliedAmount,
+            EnchantmentScope.UntilCombatEnds
         );
+
+        // 首次授予时登记本场战斗的次数账本；合并到既有实例时保留其剩余次数（不回满）。
+        if (current == null && enhancement.UsesPerCombat > 0)
+        {
+            CompanionEnhancementUses.Seed(
+                card,
+                enhancementType,
+                enhancement.UsesPerCombat
+            );
+        }
 
         return applied as AbstractCompanionEnhancement;
     }
@@ -261,11 +294,16 @@ public static class CompanionEnhancementService
             return null;
         }
 
-        return Attach(
-            ResolveAttachmentTarget(companion),
-            enhancement,
-            amount
-        );
+        if (ResolveAttachmentTarget(companion) is not { } target)
+        {
+            Entry.Logger.Warn(
+                $"[Companion/Enhancement] source={sourceGu.Id} action=Skip " +
+                "reason=NoCombatInstance"
+            );
+            return null;
+        }
+
+        return Attach(target, enhancement, amount);
     }
 
     /// <summary>按类型给该蛊牌的伴生牌挂载强化，找不到伴生牌时返回 null。</summary>
@@ -325,11 +363,12 @@ public static class CompanionEnhancementService
                 (AbstractCompanionEnhancement)
                 template.ClonePreservingMutability();
 
-            if (Attach(
-                    ResolveAttachmentTarget(companion),
-                    enhancement,
-                    grant.Amount
-                ) is not { } applied)
+            if (ResolveAttachmentTarget(companion) is not { } target)
+            {
+                continue;
+            }
+
+            if (Attach(target, enhancement, grant.Amount) is not { } applied)
             {
                 continue;
             }
@@ -443,7 +482,23 @@ public static class CompanionEnhancementService
     /// （没有谁的 <c>DeckVersion</c> 指向战斗卡），因此可以安全地在所有入口统一调用。
     /// </para>
     /// </summary>
-    private static CardModel ResolveAttachmentTarget(CardModel permanentCompanion)
+    /// <summary>
+    /// 把「子卡的永久牌组实例」解析为当前应当写入的实例：战斗内返回它的**战斗副本**，
+    /// 使强化在本场战斗立刻可见；不在战斗中时返回原实例；<b>战斗中却没有战斗副本时返回 null</b>，
+    /// 由调用方跳过本次挂载。
+    ///
+    /// <para>
+    /// 为什么必须写战斗副本：蛊强化是**本场战斗专属**（作用域 <c>UntilCombatEnds</c>），
+    /// 而牌组实例与战斗副本是两个对象。写牌组实例会让战斗态泄漏进牌组；
+    /// 写战斗副本则本场立即可见，战斗结束由前置自动清除。
+    /// </para>
+    ///
+    /// <para>
+    /// 传进来的已经是战斗卡时它会原样返回（没有谁的 <c>DeckVersion</c> 指向战斗卡），
+    /// 因此可以安全地在所有入口统一调用。
+    /// </para>
+    /// </summary>
+    private static CardModel? ResolveAttachmentTarget(CardModel permanentCompanion)
     {
         IEnumerable<CardModel>? combatCards =
             permanentCompanion.Owner?.PlayerCombatState?.AllCards;
@@ -461,6 +516,7 @@ public static class CompanionEnhancementService
             }
         }
 
-        return permanentCompanion;
+        // 战斗中却没有战斗副本（子卡已彻底离场）：不退回牌组实例，交给调用方跳过。
+        return null;
     }
 }

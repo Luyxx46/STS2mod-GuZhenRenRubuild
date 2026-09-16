@@ -1,4 +1,8 @@
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+
+using MultiEnchantmentMod.Api;
 
 using STS2RitsuLib.Scaffolding.Content;
 
@@ -15,20 +19,36 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// </para>
 ///
 /// <para>
-/// 子类约定：
+/// <b>生命周期与可用次数</b>（服务层挂载时统一施加 <c>EnchantmentScope.UntilCombatEnds</c>）：
+/// <list type="bullet">
+/// <item>强化只活在<b>当前这场战斗</b>内：战斗结束由前置自动清除，也不会被镜像进牌组；
+/// 下一场战斗需要由父蛊<b>重新催动授予</b>。</item>
+/// <item><see cref="UsesPerCombat"/> 声明「每场战斗可触发几次」（0 = 不限）。
+/// 次数记在按战斗卡分账的 <see cref="CompanionEnhancementUses"/> 上，
+/// 每次<b>真正触发</b>消耗一次；耗尽时本强化被整体移除，卡面图标随之消失
+/// （即「清空强化槽」）。同一场战斗内重新授予不会回满次数。</item>
+/// <item>层数（<c>Amount</c>，由父蛊多次催动叠加）与次数是两个独立维度：
+/// 层数是强度，次数是可用次数。</item>
+/// </list>
+/// </para>
+///
+/// <para>
+/// <b>子类约定</b>：
 /// <list type="bullet">
 /// <item>必须标 RitsuLib 的 <c>[RegisterEnchantment]</c>，才能作为模型进入 <c>ModelDb</c>；
 /// 否则 <see cref="CompanionEnhancementService.Attach{T}"/> 与授予声明都会解析失败。</item>
 /// <item><b>不要</b>标 MultiEnchantmentMod 的 <c>[Enchantment]</c>：叠层语义由
-/// <see cref="CompanionEnhancementRegistration"/> 在初始化时集中登记
-/// （<c>MergeAmount</c> + <c>SharedAcrossStack</c>，即「一个实例 + 层数」）。</item>
+/// <see cref="CompanionEnhancementRegistration"/> 集中登记
+/// （<c>MergeAmount</c> + <c>SharedAcrossStack</c> + <c>OnPlay = PerLiveInstance</c>）。</item>
+/// <item><b>不要覆写 <see cref="OnPlay"/></b>（本类已 sealed：次数消耗必须只此一条路径）。
+/// 需要「真正触发时才计数」的条件判断，覆写 <see cref="IsEffectTriggered"/>；
+/// 需要在触发瞬间做别的事，覆写 <see cref="OnEffectTriggered"/>。</item>
 /// <item>数值与流程钩子沿用原版 <see cref="EnchantmentModel"/> 的可覆写成员
 /// （<c>EnchantBlockAdditive/Multiplicative</c>、<c>EnchantDamageAdditive/Multiplicative</c>、
-/// <c>EnchantPlayCount</c>、<c>OnPlay</c>、<c>RecalculateValues</c>、
-/// <c>AfterCardPlayed</c>、<c>AfterCardDrawn</c>、<c>ShouldGlowGold/Red</c>、
-/// <c>ShouldStartAtBottomOfDrawPile</c>、<c>HoverTips</c> 等），
-/// 由前置以与主槽附魔一致的方式分发；此外前置还提供作用域、合并回调、关键词发射等
-/// 自有生命周期钩子，需要时查阅其 <c>Api/</c> 文档。</item>
+/// <c>EnchantPlayCount</c>、<c>RecalculateValues</c>、<c>ShouldGlowGold/Red</c>、
+/// <c>ShouldStartAtBottomOfDrawPile</c>、<c>HoverTips</c> 等），由前置以与主槽附魔一致的方式分发。
+/// <b>注意原版钩子契约</b>：加值类钩子返回的是<b>增量</b>而不是「原值 + 增量」
+/// （分发侧是 <c>result += 钩子(...)</c>），返回原值会双倍计算。</item>
 /// </list>
 /// </para>
 ///
@@ -62,8 +82,88 @@ public abstract class AbstractCompanionEnhancement : ModEnchantmentTemplate
     public override bool CanEnchant(CardModel card) => false;
 
     /// <summary>
-    /// 本强化的叠加上限。挂载时会把层数限制在 <c>[1, MaxAmount]</c> 内；
+    /// 本强化的叠加上限（层数上限）。挂载时会把层数限制在 <c>[1, MaxAmount]</c> 内；
     /// 默认不设上限，需要封顶的强化覆盖此属性。
     /// </summary>
     public virtual int MaxAmount => int.MaxValue;
+
+    /// <summary>
+    /// 本强化<b>每场战斗</b>可触发的次数；<c>0</c> 表示不限次数（活到战斗结束）。
+    /// 由强化自身声明，同一强化全局一致。
+    /// </summary>
+    public virtual int UsesPerCombat => 0;
+
+    /// <summary>
+    /// 本场战斗剩余可用次数。<see cref="UsesPerCombat"/> 为 0 时返回 <c>int.MaxValue</c>
+    /// （不限次数）；尚未记账时返回声明的完整次数。
+    /// </summary>
+    public int RemainingUses
+    {
+        get
+        {
+            if (UsesPerCombat <= 0)
+            {
+                return int.MaxValue;
+            }
+
+            CardModel? card = Card;
+            return card == null
+                ? UsesPerCombat
+                : CompanionEnhancementUses.Peek(card, GetType()) ?? UsesPerCombat;
+        }
+    }
+
+    /// <summary>
+    /// 本次打出是否<b>真正触发</b>了本强化的效果 —— 只有返回 true 才消耗一次可用次数。
+    /// 默认「打出即触发」；带触发条件的强化覆写此方法（例如只在子卡确实获得了格挡、
+    /// 或满足某个战斗条件时返回 true）。
+    /// </summary>
+    protected virtual bool IsEffectTriggered(CardModel card, CardPlay? cardPlay) => true;
+
+    /// <summary>
+    /// 效果真正触发时的附加行为（默认什么都不做）。
+    /// 需要「触发瞬间顺带做点什么」的强化覆写这里，而不是覆写 <see cref="OnPlay"/>。
+    /// </summary>
+    protected virtual Task OnEffectTriggered(
+        PlayerChoiceContext choiceContext,
+        CardPlay? cardPlay
+    ) => Task.CompletedTask;
+
+    /// <summary>
+    /// 逐次消耗可用次数的唯一入口。前置对额外槽的 <c>OnPlay</c> 派发发生在
+    /// <b>子卡自身效果结算之后</b>，因此在这里扣减既能保证最后一次触发仍吃满效果，
+    /// 也能在耗尽时立刻清空强化槽（卡面图标随之消失）。
+    ///
+    /// <para>sealed：子类若覆写 OnPlay 就会绕过次数消耗，破坏「每场战斗 N 次」的约定。</para>
+    /// </summary>
+    public sealed override async Task OnPlay(
+        PlayerChoiceContext choiceContext,
+        CardPlay? cardPlay
+    )
+    {
+        CardModel? card = Card;
+        if (card == null || !IsEffectTriggered(card, cardPlay))
+        {
+            return;
+        }
+
+        await OnEffectTriggered(choiceContext, cardPlay);
+
+        if (UsesPerCombat <= 0)
+        {
+            return;
+        }
+
+        if (CompanionEnhancementUses.Consume(card, GetType()) > 0)
+        {
+            return;
+        }
+
+        // 次数耗尽：整项移除（清空强化槽）。
+        MultiEnchantmentApi.RemoveEnchantment(
+            card,
+            this,
+            RemovalReason.ActivationLimitReached
+        );
+    }
 }
