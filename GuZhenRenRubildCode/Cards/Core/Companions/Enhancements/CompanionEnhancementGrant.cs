@@ -9,7 +9,7 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// 实际落卡时统一夹进 <c>[1, <see cref="AbstractCompanionEnhancement.MaxAmount"/>]</c>。
 /// 声明只描述意图，不携带任何运行时实例；真正的挂载统一走
 /// <see cref="CompanionEnhancementService"/>，与手动挂载共用同一条写入链
-/// （同类型叠层、单槽一项、载体共存）。
+/// （同类型叠层、一卡一项强化、与原版主槽附魔共存）。
 /// </para>
 /// </summary>
 /// <param name="EnhancementType">

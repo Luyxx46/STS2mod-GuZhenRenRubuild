@@ -2,6 +2,7 @@ using System.Reflection;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 using GuZhenRenRubild.Aperture;
+using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
 using GuZhenRenRubild.Combat;
@@ -42,9 +43,6 @@ public partial class Entry
         new(nameof(ShaZhaoBindingPatch), ShaZhaoBindingPatch.Initialize, ShaZhaoBindingPatch.Uninitialize),
         new(nameof(CompanionDeckLifecyclePatch), CompanionDeckLifecyclePatch.Initialize, CompanionDeckLifecyclePatch.Uninitialize),
         new(nameof(CompanionMutationProtectionPatch), CompanionMutationProtectionPatch.Initialize, CompanionMutationProtectionPatch.Uninitialize),
-        // 强化槽补丁只依赖 CompanionEnhancementService 的静态 API 与反射到的原版 UI 成员，
-        // 不依赖其它组件的初始化顺序，因此紧跟在同属伴生体系的保护补丁之后。
-        new(nameof(CompanionEnhancementSlotPatch), CompanionEnhancementSlotPatch.Initialize, CompanionEnhancementSlotPatch.Uninitialize),
         new(nameof(GuCardRewardPatch), GuCardRewardPatch.Initialize, GuCardRewardPatch.Uninitialize),
         new(nameof(GuRankRewardPatch), GuRankRewardPatch.Initialize, GuRankRewardPatch.Uninitialize),
         // 仙蛊唯一性补丁只挂在 Hook.ShouldAddToDeck 上，读取奖励赋阶与升炼写下的
@@ -120,6 +118,9 @@ public partial class Entry
         Assembly assembly = Assembly.GetExecutingAssembly();
         RitsuLibFramework.EnsureGodotScriptsRegistered(assembly, Logger);
         ModTypeDiscoveryHub.RegisterModAssembly(ModId, assembly);
+        // 强化（AbstractCompanionEnhancement 的具体子类）登记进前置 MultiEnchantmentMod：
+        // 由它把强化放进旁路额外附魔槽，从而与原版主槽附魔共存。
+        CompanionEnhancementRegistration.Register();
         _contentRegistered = true;
     }
 

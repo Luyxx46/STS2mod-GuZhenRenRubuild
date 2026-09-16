@@ -22,6 +22,9 @@
         <!-- 本机测试构建时，RitsuLib 的包与构建逻辑会使用此目录，把依赖部署到游戏的 mods/STS2-RitsuLib 目录。 -->
         <RitsuLibDeployDir Condition="'$(RitsuLibDeployDir)' == ''">$(Sts2Dir)\mods\STS2-RitsuLib</RitsuLibDeployDir>
         <RitsuLibVersion Condition="'$(RitsuLibVersion)' == ''">0.5.18</RitsuLibVersion>
+        <!-- 前置 MultiEnchantmentMod：强化槽（旁路额外附魔槽）由它提供，用户需把它安装到游戏的
+             mods/MultiEnchantmentMod/。这里只引用其 DLL 做类型解析，不随本模组分发。 -->
+        <MultiEnchantmentModPath Condition="'$(MultiEnchantmentModPath)' == ''">$(Sts2Dir)\mods\MultiEnchantmentMod\MultiEnchantmentMod.dll</MultiEnchantmentModPath>
         <CopyModOnBuild Condition="'$(CopyModOnBuild)' == ''">true</CopyModOnBuild>
         <RunPckExport Condition="'$(RunPckExport)' == '' and '$(DesignTimeBuild)' != 'true'">true</RunPckExport>
         <RunPckExport Condition="'$(RunPckExport)' == ''">false</RunPckExport>
@@ -41,6 +44,14 @@
         <Reference Include="0Harmony" HintPath="$(Sts2DataDir)\0Harmony.dll" Private="True"/>
         <Reference Include="sts2" HintPath="$(Sts2DataDir)\sts2.dll" Private="True"/>
         <Reference Include="Steamworks.NET" HintPath="$(Sts2DataDir)\Steamworks.NET.dll" Private="True"/>
+    </ItemGroup>
+
+    <!-- 前置模组 DLL：Private=false 防止把前置复制进本模组输出（游戏各自加载 mods/ 下的模组）。 -->
+    <ItemGroup Condition="Exists('$(MultiEnchantmentModPath)')">
+        <Reference Include="MultiEnchantmentMod">
+            <HintPath>$(MultiEnchantmentModPath)</HintPath>
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
@@ -77,6 +88,11 @@
     <!-- 在解析程序集引用前验证游戏安装目录，尽早给出缺少 sts2.dll 的明确错误。 -->
     <Target Name="ValidateSts2GameInstall" BeforeTargets="ResolveAssemblyReferences">
         <Error Condition="!Exists('$(Sts2DataDir)\sts2.dll')" Text="Could not find sts2.dll under '$(Sts2DataDir)'. Copy local.props.template to local.props and set Sts2Dir/Sts2DataDir for your local game install."/>
+    </Target>
+
+    <!-- 前置模组缺失时同样尽早失败：清单已把 MultiEnchantmentMod 声明为依赖，缺它则本模组无法运行。 -->
+    <Target Name="ValidateMultiEnchantmentModInstall" BeforeTargets="ResolveAssemblyReferences">
+        <Error Condition="!Exists('$(MultiEnchantmentModPath)')" Text="Could not find MultiEnchantmentMod.dll at '$(MultiEnchantmentModPath)'. GuZhenRenRubild depends on it (see GuZhenRenRubild.json): install MultiEnchantmentMod into the game's mods folder (Steam Workshop, or build https://github.com/1939323749/MultiEnchantmentMod), or set MultiEnchantmentModPath to its DLL."/>
     </Target>
 
     <!-- 编译成功后把模组程序集和清单复制到游戏 mods 目录，方便本机直接测试。 -->

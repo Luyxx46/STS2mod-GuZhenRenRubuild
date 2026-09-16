@@ -13,6 +13,10 @@
     {
       "id": "STS2-RitsuLib",
       "version": "0.5.18"
+    },
+    {
+      "id": "MultiEnchantmentMod",
+      "min_version": "v2.5.4"
     }
   ]
 }

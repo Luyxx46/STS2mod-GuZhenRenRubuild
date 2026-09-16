@@ -1,4 +1,7 @@
+using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Models;
+
+using MultiEnchantmentMod.Api;
 
 namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 
@@ -6,14 +9,20 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// 「强化槽」的唯一写入入口。
 ///
 /// <para>
+/// 强化槽本身由前置 <b>MultiEnchantmentMod</b> 提供：该模组在原版唯一的
+/// <see cref="CardModel.Enchantment"/> 之外旁路维护额外附魔槽，本模组不再自建复合载体，
+/// 因此<b>原版附魔与催动蛊给予的强化天然共存</b>——原版附魔照旧占主槽（<c>card.Enchantment</c>），
+/// 强化进额外槽，两者互不覆盖，也不必再做「摘下主槽 → 塞进载体 → 再放回」的中转。
+/// </para>
+///
+/// <para>
 /// 五条写入路径彼此独立，任何一条都不会覆盖或丢失另一项附魔：
 /// <list type="bullet">
-/// <item><see cref="Attach(CardModel, AbstractCompanionEnhancement, int)"/>：挂载强化；卡上原本没有附魔时强化直接占字段，
-/// 已有原生附魔时才建立 <see cref="CompanionEnhancementSlot"/> 载体把两者一起保存。同类型强化按层叠加，
-/// 层数统一夹进 [1, <see cref="AbstractCompanionEnhancement.MaxAmount"/>]，
-/// 不同类型强化被拒绝 —— 一个槽只放一项。</item>
-/// <item><see cref="Remove"/>：卸下强化；若卡上还有原生附魔，会把它还原成直接挂在卡上的形态（而不是吞掉）。</item>
-/// <item><see cref="ClearRegular"/>：只清原生附魔，保留强化槽内容。</item>
+/// <item><see cref="Attach(CardModel, AbstractCompanionEnhancement, int)"/>：挂载强化；同类型按层叠加，
+/// 层数统一夹进 <c>[1, <see cref="AbstractCompanionEnhancement.MaxAmount"/>]</c>，
+/// 不同类型强化被拒绝 —— 一张卡只放一项强化。</item>
+/// <item><see cref="Remove"/>：卸下强化，原版主槽附魔不受影响（额外槽与主槽彼此独立）。</item>
+/// <item><see cref="ClearRegular"/>：只清原版附魔栏位，强化槽内容保留。</item>
 /// <item><see cref="AttachToCompanionOf(CardModel, AbstractCompanionEnhancement, int)"/>：<b>催动蛊牌 → 给它的伴生牌挂强化</b> 的手动入口（定位牌组顺序最前的一张）。</item>
 /// <item><see cref="ApplyDeclaredGrants(CardModel)"/>：<b>催动管线固定调用点</b>——蛊牌实现
 /// <see cref="ICompanionEnhancementSourceGuCard"/> 声明授予（强化类型 + 自定义层数，形态对齐原版
@@ -22,8 +31,16 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// </list>
 /// </para>
 ///
+/// <para>
 /// 目标卡必须是 <see cref="ICompanionCard"/>（伴生牌）；这是本模组当前对强化槽的使用范围约束，
-/// 载体本身并不依赖它。
+/// 框架本身对目标卡没有这个限制。
+/// </para>
+///
+/// <para>
+/// 落地方式统一走 <see cref="MultiEnchantmentApi.ForceEnchant"/>：它跳过
+/// <see cref="EnchantmentModel.CanEnchant"/> 否决权（强化对该钩子恒返回 false，
+/// 以免玩家从原版事件/遗物/篝火等来源拿到强化），但保留框架的叠层、作用域与通知语义。
+/// </para>
 /// </summary>
 public static class CompanionEnhancementService
 {
@@ -31,27 +48,27 @@ public static class CompanionEnhancementService
     // 查询
     // ---------------------------------------------------------------------
 
-    /// <summary>卡牌当前是否由强化槽载体承载附魔。</summary>
-    public static bool HasSlot(CardModel? card) =>
-        card?.Enchantment is CompanionEnhancementSlot;
+    /// <summary>卡牌当前是否带有强化（额外槽里的任意 <see cref="AbstractCompanionEnhancement"/>）。</summary>
+    public static bool HasSlot(CardModel? card) => TryGetEnhancement(card) != null;
 
     /// <summary>
-    /// 读取强化槽内容；没有载体或槽为空时返回 null。
-    /// [预留] 当前无调用方：留给后续具体强化读取自身层数等用途。
+    /// 读取强化槽内容；没有强化时返回 null。
+    /// 同一类型只可能有一个实例（登记为 <c>MergeAmount</c>），层数读其 <c>Amount</c>。
     /// </summary>
     public static AbstractCompanionEnhancement? TryGetEnhancement(CardModel? card) =>
-        card?.Enchantment is CompanionEnhancementSlot slot
-            ? slot.Enhancement
-            : null;
-
-    /// <summary>读取原生附魔栏位内容；没有载体时返回 null（此时原生附魔直接挂在卡上）。</summary>
-    public static EnchantmentModel? TryGetRegular(CardModel? card) =>
-        card?.Enchantment is CompanionEnhancementSlot slot ? slot.Regular : null;
+        card == null
+            ? null
+            : MultiEnchantmentApi.GetEnchantment<AbstractCompanionEnhancement>(card);
 
     /// <summary>
-    /// 按具体类型读取原生附魔栏位内容，供需要识别特定原版附魔的调用方使用。
-    /// [预留] 当前无调用方：是为「按具体附魔类型分流」的适配预留的读取面
-    /// （非泛型的 <see cref="TryGetRegular(CardModel?)"/> 才是补丁实际使用的那一个）。
+    /// 读取原版附魔栏位内容：即 <see cref="CardModel.Enchantment"/> 本身。
+    /// 强化已不再占用该字段，因此这里返回的就是原版附魔（没有则返回 null）。
+    /// </summary>
+    public static EnchantmentModel? TryGetRegular(CardModel? card) => card?.Enchantment;
+
+    /// <summary>
+    /// 按具体类型读取原版附魔栏位内容，供需要识别特定原版附魔的调用方使用。
+    /// [预留] 当前无调用方：是为「按具体附魔类型分流」的适配预留的读取面。
     /// </summary>
     public static bool TryGetRegular<T>(CardModel? card, out T? regular)
         where T : EnchantmentModel
@@ -61,42 +78,15 @@ public static class CompanionEnhancementService
     }
 
     /// <summary>
-    /// 枚举卡上全部附魔（原生 + 强化），顺序固定为「原生附魔 → 强化」。
-    /// [预留] 当前无调用方：这是留给后续具体强化的公开对称读取面。
-    ///
-    /// 补丁目前不经过这里，而是直接读载体字段（<c>CompanionEnhancementSlot.Regular</c> /
-    /// <c>Enhancement</c> / <c>InnerEnchantments</c>）：追加卡面正文与拼悬浮提示时
-    /// 需要区分「这是原生附魔还是强化」，而不只是按顺序遍历全部内层。
+    /// 枚举卡上全部玩法附魔（原版附魔 + 强化），顺序由框架按「应用顺序」给出
+    /// （主槽附魔在最前，随后是额外槽按附加先后排列）。没有附魔时返回空列表。
     /// </summary>
     public static IReadOnlyList<EnchantmentModel> EnumerateEnchantments(
         CardModel? card
-    )
-    {
-        if (card?.Enchantment is CompanionEnhancementSlot slot)
-        {
-            return slot.InnerEnchantments;
-        }
-
-        return card?.Enchantment is { } single
-            ? new EnchantmentModel[] { single }
-            : Array.Empty<EnchantmentModel>();
-    }
-
-    /// <summary>取载体实例本身；补丁需要直接读写载体的子附魔时使用。</summary>
-    internal static bool TryGetSlot(
-        CardModel? card,
-        out CompanionEnhancementSlot slot
-    )
-    {
-        if (card?.Enchantment is CompanionEnhancementSlot found)
-        {
-            slot = found;
-            return true;
-        }
-
-        slot = null!;
-        return false;
-    }
+    ) =>
+        card == null
+            ? Array.Empty<EnchantmentModel>()
+            : MultiEnchantmentApi.GetEnchantments(card);
 
     // ---------------------------------------------------------------------
     // 写入：强化槽
@@ -104,7 +94,8 @@ public static class CompanionEnhancementService
 
     /// <summary>
     /// 给伴生牌挂载强化。返回实际生效的强化实例（已有同类型强化时就是那一项，层数已叠加），
-    /// 目标不是伴生牌或槽内已有其它类型强化时返回 null 且不改动卡牌。
+    /// 目标不是伴生牌、实例已绑定其它卡、或槽内已有其它类型强化时返回 null 且不改动卡牌；
+    /// 层数已达到 <see cref="AbstractCompanionEnhancement.MaxAmount"/> 时返回现有实例（幂等，不再叠加）。
     /// </summary>
     public static AbstractCompanionEnhancement? Attach(
         CardModel card,
@@ -117,7 +108,7 @@ public static class CompanionEnhancementService
 
         // 已经绑定到某张卡的附魔不能再挂到第二张卡上：EnchantmentModel.ApplyInternal
         // 在 Card != null 时会抛 InvalidOperationException，而本入口的约定是
-        // 「返回 null 且不改动卡牌」，所以必须在进入载体之前拦下来。
+        // 「返回 null 且不改动卡牌」，所以必须提前拦下来。
         if (enhancement.HasCard)
         {
             Entry.Logger.Warn(
@@ -135,9 +126,8 @@ public static class CompanionEnhancementService
         card.AssertMutable();
 
         // 一个槽只放一项：与已有强化类型不同时直接拒绝，绝不做静默替换。
-        if (card.Enchantment is CompanionEnhancementSlot existingSlot &&
-            existingSlot.Enhancement is { } current &&
-            current.GetType() != enhancement.GetType())
+        AbstractCompanionEnhancement? current = TryGetEnhancement(card);
+        if (current != null && current.GetType() != enhancement.GetType())
         {
             Entry.Logger.Warn(
                 $"[Companion/Enhancement] card={card.Id} action=Reject " +
@@ -147,18 +137,26 @@ public static class CompanionEnhancementService
             return null;
         }
 
-        CompanionEnhancementSlot slot = EnsureSlot(card);
-
         // 层数统一夹进 [1, MaxAmount]：首次挂载与后续叠加共用同一约定，
         // 授予方传多大都会被强化自身的上限封顶，不依赖具体子类自行防御。
-        AbstractCompanionEnhancement attached = slot.AttachEnhancement(
+        int currentAmount = current?.Amount ?? 0;
+        int remaining = enhancement.MaxAmount - currentAmount;
+        if (remaining <= 0)
+        {
+            return current;
+        }
+
+        int appliedAmount = Math.Clamp(amount, 1, remaining);
+
+        // 跳过 CanEnchant 否决权（强化恒为 false），叠层/作用域/通知仍由框架处理；
+        // 同类型已在卡上时框架走 MergeAmount 合并分支，返回的是那个既有实例。
+        EnchantmentModel? applied = MultiEnchantmentApi.ForceEnchant(
+            card,
             enhancement,
-            Math.Clamp(amount, 1, enhancement.MaxAmount)
+            appliedAmount
         );
 
-        card.DynamicVars.RecalculateForUpgradeOrEnchant();
-        card.FinalizeUpgradeInternal();
-        return attached;
+        return applied as AbstractCompanionEnhancement;
     }
 
     /// <summary>按类型挂载强化，内部会从 <see cref="ModelDb"/> 取规范实例的可变副本。</summary>
@@ -179,69 +177,50 @@ public static class CompanionEnhancementService
     }
 
     /// <summary>
-    /// 卸下强化槽内容。卡上仍有原生附魔时，会把它还原成直接挂载的形态并保留其层数；
+    /// 卸下强化槽内容。原版附魔栏位不受影响（两者本就分处主槽与额外槽）；
     /// 返回是否真的卸下了强化（槽为空时返回 false 且不改动卡牌）。
     /// </summary>
     public static bool Remove(CardModel card)
     {
         ArgumentNullException.ThrowIfNull(card);
 
-        if (!TryGetSlot(card, out CompanionEnhancementSlot slot))
+        IReadOnlyList<AbstractCompanionEnhancement> existing =
+            MultiEnchantmentApi.GetEnchantments<AbstractCompanionEnhancement>(card);
+        if (existing.Count == 0)
         {
             return false;
         }
 
         card.AssertMutable();
 
-        AbstractCompanionEnhancement? enhancement = slot.DetachEnhancement();
-        if (enhancement == null)
+        bool removed = false;
+        foreach (AbstractCompanionEnhancement enhancement in existing)
         {
-            return false;
+            removed |= MultiEnchantmentApi.RemoveEnchantment(
+                card,
+                enhancement,
+                RemovalReason.Manual
+            );
         }
 
-        EnchantmentModel? regular = slot.DetachRegular();
-
-        // 载体本身不再需要，先摘下来；随后把原生附魔重新直接挂回卡上。
-        card.ClearEnchantmentInternal();
-        enhancement.ClearInternal();
-
-        if (regular != null)
-        {
-            regular.ClearInternal();
-            card.EnchantInternal(regular, regular.Amount);
-        }
-
-        card.DynamicVars.RecalculateForUpgradeOrEnchant();
-        card.FinalizeUpgradeInternal();
-        return true;
+        return removed;
     }
 
     /// <summary>
-    /// 只清空原生附魔栏位，保留强化槽内容与载体。
-    /// 返回是否真的清掉了原生附魔（本来就没有时返回 false 且不改动卡牌）。
+    /// 只清空原版附魔栏位，保留强化槽内容。
+    /// 返回是否真的清掉了原版附魔（本来就没有时返回 false 且不改动卡牌）。
     /// </summary>
     public static bool ClearRegular(CardModel card)
     {
         ArgumentNullException.ThrowIfNull(card);
 
-        if (!TryGetSlot(card, out CompanionEnhancementSlot slot))
+        if (card.Enchantment == null)
         {
             return false;
         }
 
         card.AssertMutable();
-
-        EnchantmentModel? regular = slot.DetachRegular();
-        if (regular == null)
-        {
-            return false;
-        }
-
-        // 摘下来的原生附魔不能再保持对同一张卡的绑定，否则卡上会同时存在两个「已绑卡」的附魔。
-        regular.ClearInternal();
-
-        card.DynamicVars.RecalculateForUpgradeOrEnchant();
-        card.FinalizeUpgradeInternal();
+        CardCmd.ClearEnchantment(card);
         return true;
     }
 
@@ -416,34 +395,6 @@ public static class CompanionEnhancementService
         }
 
         return (AbstractCompanionEnhancement)canonical.ToMutable();
-    }
-
-    /// <summary>
-    /// 保证卡上存在载体。卡上原本没有附魔时直接让载体占住字段；已有原生附魔时先摘下来
-    /// 再交给载体接管 —— 顺序不能反，<see cref="EnchantmentModel.ApplyInternal"/> 要求
-    /// 目标附魔当前没有绑定任何卡。
-    /// </summary>
-    private static CompanionEnhancementSlot EnsureSlot(CardModel card)
-    {
-        if (card.Enchantment is CompanionEnhancementSlot existing)
-        {
-            return existing;
-        }
-
-        EnchantmentModel? regular = card.Enchantment;
-        CompanionEnhancementSlot slot =
-            (CompanionEnhancementSlot)
-            ModelDb.Enchantment<CompanionEnhancementSlot>().ToMutable();
-
-        card.ClearEnchantmentInternal();
-        card.EnchantInternal(slot, 1m);
-
-        if (regular != null)
-        {
-            slot.ImportExisting(regular);
-        }
-
-        return slot;
     }
 
     private static bool CanCarrySlot(CardModel card)
