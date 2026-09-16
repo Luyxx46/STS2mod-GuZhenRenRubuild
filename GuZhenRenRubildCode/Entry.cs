@@ -52,6 +52,9 @@ public partial class Entry
         new(nameof(GuCombatPatch), GuCombatPatch.Initialize, GuCombatPatch.Uninitialize),
         // 蛊手牌布局补丁只依赖牌堆注册结果，必须晚于 GuCardPileSystem 启动。
         new(nameof(GuHandLayoutPatch), GuHandLayoutPatch.Initialize, GuHandLayoutPatch.Uninitialize),
+        // 仙元不足提示补丁只读 IGuCard.GuRank 与仙元余额、改写原版一句人物台词，
+        // 不依赖任何已启动组件的状态，也没有硬性先后要求；放在这里只是让"提示层"组件相邻。
+        new(nameof(XianYuanWarningPatch), XianYuanWarningPatch.Initialize, XianYuanWarningPatch.Uninitialize),
         // 配方大全只读配方注册表，卡牌扫描在 RegisterContentOnce 中已完成，放在最后即可。
         new(nameof(RecipeCompendiumSystem), RecipeCompendiumSystem.Initialize, RecipeCompendiumSystem.Uninitialize),
     ];
