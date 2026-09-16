@@ -1,5 +1,6 @@
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 using GuZhenRenRubild.Characters;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -12,13 +13,18 @@ namespace GuZhenRenRubild.Cards.Basic.YueGuangGu;
 // 将「月光蛊」注册进角色卡池，并作为 2 张初始蛊牌加入角色初始牌组。
 // 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出对应数量的月刃。
 // 与伴生牌 YueGuangCompanion 同处一个目录：一只初始蛊连同它的伴生牌自成一组。
+// 作为「父蛊」，它每次催动还会按声明给子卡（月刃）叠一层 YueRenEnhancement。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuYueFangYuan), 2)]
-public sealed class YueGuangGu : AbstractGuAttackCard, ICompanionSourceGuCard
+public sealed class YueGuangGu : AbstractGuAttackCard, ICompanionEnhancementSourceGuCard
 {
     // 目录名与类名同为 YueGuangGu，命名空间因此与本类同名，跨目录引用必须走 global:: 全限定名。
     public CompanionDefinition Companion =>
         new(typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangCompanion));
+
+    // 父蛊声明：每次催动给子卡叠 1 层月刃强化（层数上限由强化自身的 MaxAmount 封顶）。
+    public CompanionEnhancementGrant? BuildCompanionEnhancementGrant() =>
+        CompanionEnhancementGrant.Of<YueRenEnhancement>(1);
 
     // 声明伤害动态变量；最终基础值由品阶公式在 RefreshValues 中覆盖。
     protected override IEnumerable<DynamicVar> CanonicalVars =>

@@ -41,6 +41,13 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// <see cref="EnchantmentModel.CanEnchant"/> 否决权（强化对该钩子恒返回 false，
 /// 以免玩家从原版事件/遗物/篝火等来源拿到强化），但保留框架的叠层、作用域与通知语义。
 /// </para>
+///
+/// <para>
+/// <b>写入时机与可见性</b>：父蛊催动发生在战斗内，而子卡在战斗中有独立副本。
+/// 因此写入前统一经 <see cref="ResolveAttachmentTarget"/> 把「永久牌组实例」换成
+/// 它的战斗副本 —— 强化在本场战斗立刻可见；又因为前置会把**永久作用域**的挂载镜像回
+/// <c>DeckVersion</c>（即永久牌组实例），持久化与联机同步照常成立。
+/// </para>
 /// </summary>
 public static class CompanionEnhancementService
 {
@@ -254,7 +261,11 @@ public static class CompanionEnhancementService
             return null;
         }
 
-        return Attach(companion, enhancement, amount);
+        return Attach(
+            ResolveAttachmentTarget(companion),
+            enhancement,
+            amount
+        );
     }
 
     /// <summary>按类型给该蛊牌的伴生牌挂载强化，找不到伴生牌时返回 null。</summary>
@@ -314,7 +325,11 @@ public static class CompanionEnhancementService
                 (AbstractCompanionEnhancement)
                 template.ClonePreservingMutability();
 
-            if (Attach(companion, enhancement, grant.Amount) is not { } applied)
+            if (Attach(
+                    ResolveAttachmentTarget(companion),
+                    enhancement,
+                    grant.Amount
+                ) is not { } applied)
             {
                 continue;
             }
@@ -409,5 +424,43 @@ public static class CompanionEnhancementService
             "reason=NotCompanionCard"
         );
         return false;
+    }
+
+    /// <summary>
+    /// 把「子卡的永久牌组实例」解析为当前应当写入的实例：战斗内优先返回它的**战斗副本**，
+    /// 使强化在本场战斗立刻可见；不在战斗中、或该牌当前没有战斗副本时返回原实例。
+    ///
+    /// <para>
+    /// 之所以写战斗副本而不是牌组实例：父蛊催动发生在战斗内，牌组实例与战斗副本是两个对象，
+    /// 只写牌组侧要等**下一场战斗**的克隆流程才会带上强化。反向不可行也不必要——
+    /// 前置对**永久作用域**的挂载会自动镜像回 <c>DeckVersion</c>（也就是永久牌组实例），
+    /// 且卡牌克隆时会带上额外槽，所以写战斗副本既立刻可见、又能正确持久化。
+    /// </para>
+    ///
+    /// <para>
+    /// <b>切勿两处都写</b>：镜像会把战斗侧的层数再加到牌组侧，造成重复合并叠层。
+    /// 本方法只返回一个目标，正是为了守住这一点。传进来的已经是战斗卡时它会原样返回
+    /// （没有谁的 <c>DeckVersion</c> 指向战斗卡），因此可以安全地在所有入口统一调用。
+    /// </para>
+    /// </summary>
+    private static CardModel ResolveAttachmentTarget(CardModel permanentCompanion)
+    {
+        IEnumerable<CardModel>? combatCards =
+            permanentCompanion.Owner?.PlayerCombatState?.AllCards;
+        if (combatCards == null)
+        {
+            return permanentCompanion;
+        }
+
+        foreach (CardModel candidate in combatCards)
+        {
+            if (candidate != null &&
+                ReferenceEquals(candidate.DeckVersion, permanentCompanion))
+            {
+                return candidate;
+            }
+        }
+
+        return permanentCompanion;
     }
 }

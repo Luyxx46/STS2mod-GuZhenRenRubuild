@@ -1,1 +1,8 @@
-{}
+{
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.title": "月刃强化",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.description": "父蛊月光蛊催动时给子卡月刃叠上的强化：每层使月刃造成的伤害提高 2 点，最多 3 层。",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_REN_ENHANCEMENT.extraCardText": "此牌造成的伤害提高 [blue]2[/blue]×层数。",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.title": "玉皮甲强化",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.description": "父蛊玉皮蛊催动时给子卡玉皮甲叠上的强化：每层使玉皮甲获得的格挡提高 3 点，最多 3 层。",
+  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.extraCardText": "此牌获得的格挡提高 [blue]3[/blue]×层数。"
+}
