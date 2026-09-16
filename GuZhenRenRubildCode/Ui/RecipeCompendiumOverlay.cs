@@ -83,7 +83,7 @@ public partial class RecipeCompendiumOverlay : CanvasLayer
     // 自定义顶栏按钮与原生小地图按钮之间的间距。
     private const float TopBarButtonGap = 14f;
 
-    // 主题色：与 GuZhenRenRubildCharacter.ThemeColor 同一套水墨-青玉配色。
+    // 主题色：与 GuYueFangYuan.ThemeColor 同一套水墨-青玉配色。
     // 面板/页签/返回按钮的静态样式与颜色已固化在 RecipeCompendium.tscn 里，
     // 这里只保留运行时动态创建的控件（列表行、链接按钮、转数按钮）要用的颜色。
     private static readonly Color Gold = new("d0a45e");

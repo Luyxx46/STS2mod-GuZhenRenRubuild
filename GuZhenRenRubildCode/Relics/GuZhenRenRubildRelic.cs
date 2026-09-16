@@ -26,7 +26,7 @@ namespace GuZhenRenRubild.Relics;
 // RegisterCharacterStarterRelic 将它设为该角色的初始遗物；蛊牌的打出后归位和元气回合恢复都由此遗物挂接原生时机。
 // 同时它也是"空窍"本体的载体：承载 1～9 转状态、驱动元气上限与每回合恢复，并按转数切换图标。
 [RegisterRelic(typeof(GuZhenRenRubildRelicPool))]
-[RegisterCharacterStarterRelic(typeof(GuZhenRenRubildCharacter))]
+[RegisterCharacterStarterRelic(typeof(GuYueFangYuan))]
 public sealed class GuZhenRenRubildRelic
     : ModRelicTemplate, ISecondaryResourceHookListener
 {

@@ -31,7 +31,7 @@ public abstract class AbstractGuCardPool :
         GuZhenRenRubildAssets.TextEnergyIconPath;
 
     public override Color DeckEntryCardColor =>
-        GuZhenRenRubildCharacter.ThemeColor;
+        GuYueFangYuan.ThemeColor;
 
     public override Color EnergyOutlineColor =>
         GuZhenRenRubildAssets.EnergyOutlineColor;

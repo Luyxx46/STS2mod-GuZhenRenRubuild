@@ -12,7 +12,7 @@ public sealed class GuZhenRenRubildPotionPool : TypeListPotionPoolModel
         GuZhenRenRubildAssets.EnergyColorName;
 
     public override Color LabOutlineColor =>
-        GuZhenRenRubildCharacter.ThemeColor;
+        GuYueFangYuan.ThemeColor;
 
     public override string? BigEnergyIconPath =>
         GuZhenRenRubildAssets.BigEnergyIconPath;

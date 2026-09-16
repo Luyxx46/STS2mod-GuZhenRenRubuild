@@ -12,7 +12,7 @@ public sealed class GuZhenRenRubildRelicPool : TypeListRelicPoolModel
         GuZhenRenRubildAssets.EnergyColorName;
 
     public override Color LabOutlineColor =>
-        GuZhenRenRubildCharacter.ThemeColor;
+        GuYueFangYuan.ThemeColor;
 
     // 遗物实验室和文本也会读取池子的能量图标路径。
     public override string? BigEnergyIconPath =>

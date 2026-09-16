@@ -8,8 +8,10 @@ using STS2RitsuLib.Scaffolding.Godot;
 namespace GuZhenRenRubild.Characters;
 
 // 自动注册角色模型，并通过泛型参数把角色与专属卡池、遗物池和药水池绑定在一起。
+// 角色本名古月方源，类型名即取此名；角色本地化 key 由 RitsuLib 按
+// "{ModId}_CHARACTER_{类型名大写蛇形}" 推导，改名时必须同步两张本地化表。
 [RegisterCharacter]
-public sealed class GuZhenRenRubildCharacter : ModCharacterTemplate<GuZhenRenRubildGuCardPool, GuZhenRenRubildRelicPool, GuZhenRenRubildPotionPool>
+public sealed class GuYueFangYuan : ModCharacterTemplate<GuZhenRenRubildGuCardPool, GuZhenRenRubildRelicPool, GuZhenRenRubildPotionPool>
 {
     // 角色统一主题色，卡池、药水池、遗物池和地图绘制都会复用该颜色。
     public static readonly Color ThemeColor = new(0.42f, 0.65f, 0.72f);

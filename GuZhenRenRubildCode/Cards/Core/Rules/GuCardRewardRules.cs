@@ -11,7 +11,7 @@ public static class GuCardRewardRules
 {
     public static bool CanAppear(Player player, CardModel candidate)
     {
-        if (player.Character is not GuZhenRenRubildCharacter)
+        if (player.Character is not GuYueFangYuan)
         {
             return true;
         }

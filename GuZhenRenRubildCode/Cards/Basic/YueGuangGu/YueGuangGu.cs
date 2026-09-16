@@ -13,7 +13,7 @@ namespace GuZhenRenRubild.Cards.Basic.YueGuangGu;
 // 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出对应数量的月刃。
 // 与伴生牌 YueGuangCompanion 同处一个目录：一只初始蛊连同它的伴生牌自成一组。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
-[RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 2)]
+[RegisterCharacterStarterCard(typeof(GuYueFangYuan), 2)]
 public sealed class YueGuangGu : AbstractGuAttackCard, ICompanionSourceGuCard
 {
     // 目录名与类名同为 YueGuangGu，命名空间因此与本类同名，跨目录引用必须走 global:: 全限定名。

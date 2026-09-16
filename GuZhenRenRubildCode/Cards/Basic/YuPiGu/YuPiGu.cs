@@ -13,7 +13,7 @@ namespace GuZhenRenRubild.Cards.Basic.YuPiGu;
 // 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出 1 张玉皮甲。
 // 与伴生牌 YuPiCompanion 同处一个目录：一只初始蛊连同它的伴生牌自成一组。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
-[RegisterCharacterStarterCard(typeof(GuZhenRenRubildCharacter), 1)]
+[RegisterCharacterStarterCard(typeof(GuYueFangYuan), 1)]
 public sealed class YuPiGu : AbstractGuBlockCard, ICompanionSourceGuCard
 {
     // 目录名与类名同为 YuPiGu，命名空间因此与本类同名，跨目录引用必须走 global:: 全限定名。

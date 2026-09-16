@@ -32,9 +32,9 @@ public static class GuZhenRenRubildAssets
     // 卡池边框材质按角色主题色着色，首次使用时才创建，避免在 Godot 就绪前构造材质。
     private static readonly Lazy<Material?> FrameTintMaterial = new(
         static () => MaterialUtils.CreateReplaceHueShaderMaterial(
-            GuZhenRenRubildCharacter.ThemeColor.R,
-            GuZhenRenRubildCharacter.ThemeColor.G,
-            GuZhenRenRubildCharacter.ThemeColor.B
+            GuYueFangYuan.ThemeColor.R,
+            GuYueFangYuan.ThemeColor.G,
+            GuYueFangYuan.ThemeColor.B
         )
     );
 

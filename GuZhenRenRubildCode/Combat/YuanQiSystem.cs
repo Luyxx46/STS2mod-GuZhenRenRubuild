@@ -82,7 +82,7 @@ public static class YuanQiSystem
 
                     // 节点挂载注册会作用于所有角色的战斗界面；只有本模组
                     // 角色才把元气表定位到原生能量表右上方，避免影响其他角色。
-                    if (context.Player?.Character is GuZhenRenRubildCharacter)
+                    if (context.Player?.Character is GuYueFangYuan)
                     {
                         context.Node.AttachBesideNativeEnergyCounter(
                             context.Parent
@@ -96,7 +96,7 @@ public static class YuanQiSystem
                     IncludeDerivedParentTypes = true,
                 }
             );
-            registry.AlwaysShowInCombatUiForCharacter<GuZhenRenRubildCharacter>(
+            registry.AlwaysShowInCombatUiForCharacter<GuYueFangYuan>(
                 LocalId
             );
             _initialized = true;
