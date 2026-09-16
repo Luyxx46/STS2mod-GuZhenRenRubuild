@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Rooms;
 using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 using GuZhenRenRubild.Cards.Core.ImmortalEssence;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
@@ -97,6 +98,12 @@ public sealed class GuZhenRenRubildRelic
 
         // 进入实际结算前消耗一次当前激活周期的使用次数。
         GuCardRuntime.RegisterActivation(cardPlay.Card);
+
+        // 催动即增幅：按蛊牌自身的声明给伴生牌挂强化。
+        // 只有实现 ICompanionEnhancementSourceGuCard 的蛊牌会实际产生强化，
+        // 其余蛊牌一次类型判断后直接返回；找不到伴生牌或挂载被拒时
+        // 由服务侧记警告，绝不打断本次打出。
+        CompanionEnhancementService.ApplyDeclaredGrants(cardPlay.Card);
 
         // 六转及以上的蛊牌催动时额外扣减仙元单位（元气照付）。
         // 可打出判定本应已拦住余额不足的情况；万一漏到这里只记日志，不打断打出流程。

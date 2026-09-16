@@ -6,14 +6,19 @@ namespace GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 /// 「强化槽」的唯一写入入口。
 ///
 /// <para>
-/// 四条写入路径彼此独立，任何一条都不会覆盖或丢失另一项附魔：
+/// 五条写入路径彼此独立，任何一条都不会覆盖或丢失另一项附魔：
 /// <list type="bullet">
 /// <item><see cref="Attach(CardModel, AbstractCompanionEnhancement, int)"/>：挂载强化；卡上原本没有附魔时强化直接占字段，
-/// 已有原生附魔时才建立 <see cref="CompanionEnhancementSlot"/> 载体把两者一起保存。同类型强化按层叠加（上限 <see cref="AbstractCompanionEnhancement.MaxAmount"/>），
+/// 已有原生附魔时才建立 <see cref="CompanionEnhancementSlot"/> 载体把两者一起保存。同类型强化按层叠加，
+/// 层数统一夹进 [1, <see cref="AbstractCompanionEnhancement.MaxAmount"/>]，
 /// 不同类型强化被拒绝 —— 一个槽只放一项。</item>
 /// <item><see cref="Remove"/>：卸下强化；若卡上还有原生附魔，会把它还原成直接挂在卡上的形态（而不是吞掉）。</item>
 /// <item><see cref="ClearRegular"/>：只清原生附魔，保留强化槽内容。</item>
-/// <item><see cref="AttachToCompanionOf(CardModel, AbstractCompanionEnhancement, int)"/>：<b>催动蛊牌 → 给它的伴生牌挂强化</b> 的唯一入口。</item>
+/// <item><see cref="AttachToCompanionOf(CardModel, AbstractCompanionEnhancement, int)"/>：<b>催动蛊牌 → 给它的伴生牌挂强化</b> 的手动入口（定位牌组顺序最前的一张）。</item>
+/// <item><see cref="ApplyDeclaredGrants(CardModel)"/>：<b>催动管线固定调用点</b>——蛊牌实现
+/// <see cref="ICompanionEnhancementSourceGuCard"/> 声明授予（强化类型 + 自定义层数，形态对齐原版
+/// <c>CardCmd.Enchant</c> 的自定义 amount，见 <see cref="CompanionEnhancementGrant"/>），
+/// 催动时自动给配对内全部伴生牌挂载。</item>
 /// </list>
 /// </para>
 ///
@@ -143,9 +148,12 @@ public static class CompanionEnhancementService
         }
 
         CompanionEnhancementSlot slot = EnsureSlot(card);
+
+        // 层数统一夹进 [1, MaxAmount]：首次挂载与后续叠加共用同一约定，
+        // 授予方传多大都会被强化自身的上限封顶，不依赖具体子类自行防御。
         AbstractCompanionEnhancement attached = slot.AttachEnhancement(
             enhancement,
-            Math.Max(1, amount)
+            Math.Clamp(amount, 1, enhancement.MaxAmount)
         );
 
         card.DynamicVars.RecalculateForUpgradeOrEnchant();
@@ -242,7 +250,7 @@ public static class CompanionEnhancementService
     // ---------------------------------------------------------------------
 
     /// <summary>
-    /// 给「该蛊牌的伴生牌」挂载强化。这是催动蛊牌产生强化的唯一入口：
+    /// 给「该蛊牌的伴生牌」挂载强化（定位牌组顺序最前的一张）：
     /// 内部通过 <see cref="CompanionRelationshipService.TryGetCompanion"/> 定位伴生牌，
     /// 找不到（不在牌组、未建立配对、非伴生来源蛊）时返回 null 并只记一条警告，不抛异常。
     /// </summary>
@@ -281,9 +289,134 @@ public static class CompanionEnhancementService
             amount
         );
 
+    /// <summary>
+    /// 按授予声明给「该蛊牌的全部伴生牌」挂载强化：多伴生来源
+    /// （<see cref="CompanionDefinition.Count"/> &gt; 1）的每一张都会独立拿到层数。
+    /// 伴生牌通过 <see cref="CompanionRelationshipService.GetCompanions"/> 解析为
+    /// 永久牌组实例，因此战斗中催动同样落在持久侧，存档与联机天然同步。
+    ///
+    /// <para>
+    /// 返回每张伴生牌实际生效的强化实例（挂载被拒或找不到伴生牌的项不出现在结果里）；
+    /// 全程只记警告不抛异常——授予是增强行为，绝不打断催动流程。
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<AbstractCompanionEnhancement> AttachToCompanionsOf(
+        CardModel sourceGu,
+        CompanionEnhancementGrant grant
+    )
+    {
+        ArgumentNullException.ThrowIfNull(sourceGu);
+        ArgumentNullException.ThrowIfNull(grant);
+
+        IReadOnlyList<CardModel> companions =
+            CompanionRelationshipService.GetCompanions(sourceGu);
+        if (companions.Count == 0)
+        {
+            Entry.Logger.Warn(
+                $"[Companion/Enhancement] source={sourceGu.Id} action=Skip " +
+                "reason=NoCompanion"
+            );
+            return [];
+        }
+
+        // 先解析一次：类型校验与注册校验只做一回，失败只记一条警告。
+        if (ResolveGrant(sourceGu.Id, grant) is not { } template)
+        {
+            return [];
+        }
+
+        List<AbstractCompanionEnhancement> attached = [];
+        foreach (CardModel companion in companions)
+        {
+            // 每张伴生牌挂独立的可变克隆：附魔实例绑定第一张卡后
+            // （HasCard=true）不能再挂第二张，Attach 会直接拒绝；
+            // 克隆体由 DeepCloneFields 清空卡绑定，可以安全落到下一张。
+            var enhancement =
+                (AbstractCompanionEnhancement)
+                template.ClonePreservingMutability();
+
+            if (Attach(companion, enhancement, grant.Amount) is not { } applied)
+            {
+                continue;
+            }
+
+            attached.Add(applied);
+        }
+
+        return attached;
+    }
+
+    /// <summary>
+    /// 催动管线的固定调用点：按蛊牌自身的声明给它的伴生牌挂强化。
+    ///
+    /// <para>
+    /// 蛊牌实现 <see cref="ICompanionEnhancementSourceGuCard"/> 并在
+    /// <see cref="ICompanionEnhancementSourceGuCard.BuildCompanionEnhancementGrant"/>
+    /// 里声明「给什么强化、本次几层」即可，无需写任何挂载代码；
+    /// 未实现接口的蛊牌零开销直接返回，声明返回 null（条件授予不触发）时同样无操作。
+    /// 返回本次实际挂载成功的强化列表（每张伴生牌一项）。
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<AbstractCompanionEnhancement> ApplyDeclaredGrants(
+        CardModel activatedGu
+    )
+    {
+        ArgumentNullException.ThrowIfNull(activatedGu);
+
+        if (activatedGu is not ICompanionEnhancementSourceGuCard declaration)
+        {
+            return [];
+        }
+
+        CompanionEnhancementGrant? grant =
+            declaration.BuildCompanionEnhancementGrant();
+        if (grant == null)
+        {
+            return [];
+        }
+
+        return AttachToCompanionsOf(activatedGu, grant);
+    }
+
     // ---------------------------------------------------------------------
     // 内部
     // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 把授予声明解析成一个全新的可变强化实例：校验类型归属与注册状态，
+    /// 解析失败时记警告并返回 null，绝不抛异常（授予是增强行为，不该打断催动）。
+    /// </summary>
+    private static AbstractCompanionEnhancement? ResolveGrant(
+        ModelId sourceId,
+        CompanionEnhancementGrant grant
+    )
+    {
+        ArgumentNullException.ThrowIfNull(grant);
+
+        if (!typeof(AbstractCompanionEnhancement)
+                .IsAssignableFrom(grant.EnhancementType))
+        {
+            Entry.Logger.Warn(
+                $"[Companion/Enhancement] source={sourceId} action=Skip " +
+                $"grant={grant.EnhancementType.Name} " +
+                "reason=NotCompanionEnhancement"
+            );
+            return null;
+        }
+
+        if (ModelDb.GetByIdOrNull<EnchantmentModel>(
+                ModelDb.GetId(grant.EnhancementType)
+            ) is not AbstractCompanionEnhancement canonical)
+        {
+            Entry.Logger.Warn(
+                $"[Companion/Enhancement] source={sourceId} action=Skip " +
+                $"grant={grant.EnhancementType.Name} reason=NotRegistered"
+            );
+            return null;
+        }
+
+        return (AbstractCompanionEnhancement)canonical.ToMutable();
+    }
 
     /// <summary>
     /// 保证卡上存在载体。卡上原本没有附魔时直接让载体占住字段；已有原生附魔时先摘下来

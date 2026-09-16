@@ -90,6 +90,40 @@ public static class CompanionRelationshipService
         );
     }
 
+    /// <summary>
+    /// 返回该来源蛊在永久牌组里配对的全部伴生牌（按牌组顺序）。
+    ///
+    /// <para>
+    /// 传入的 sourceGu 可以是战斗副本（催动管线拿到的是战斗实例），
+    /// 会先经 <c>DeckVersion</c> 归位到永久侧再按 PairId 扫描，
+    /// 因此返回值恒为永久牌组实例——强化槽写入与存档都发生在持久侧，
+    /// 战斗实例打出伴生牌时由原版克隆流程自然携带。
+    /// 未配对（不在牌组、未建立关系、无主人）时返回空列表，不抛异常。
+    /// </para>
+    /// </summary>
+    public static IReadOnlyList<CardModel> GetCompanions(CardModel sourceGu)
+    {
+        ArgumentNullException.ThrowIfNull(sourceGu);
+
+        CardModel permanent = sourceGu.DeckVersion ?? sourceGu;
+        Player? owner = permanent.Owner;
+        if (owner == null)
+        {
+            return [];
+        }
+
+        int pairId = CompanionPairState.Get(permanent);
+        if (pairId <= 0)
+        {
+            return [];
+        }
+
+        return owner.Deck.Cards
+            .Where(card => card is ICompanionCard &&
+                           CompanionPairState.Get(card) == pairId)
+            .ToList();
+    }
+
     public static bool IsManagedCompanion(CardModel card)
     {
         return card is ICompanionCard && CompanionPairState.Get(card) > 0;
