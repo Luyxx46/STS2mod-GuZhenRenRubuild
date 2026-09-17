@@ -2,6 +2,7 @@ using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Companions;
 using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -22,17 +23,21 @@ public sealed class YuPiGu : AbstractGuBlockCard, ICompanionEnhancementSourceGuC
     public CompanionDefinition Companion =>
         new(typeof(global::GuZhenRenRubild.Cards.Basic.YuPiGu.YuPiCompanion));
 
+    // 玉皮蛊只有一转窗口：它是月系合练的通用防御材料，成长交给月霓裳一系。
+    public override int MaxGuRank => 1;
+
     // 父蛊声明：每次催动给子卡叠 1 层玉皮甲强化（层数上限由强化自身的 MaxAmount 封顶）。
-    public CompanionEnhancementGrant? BuildCompanionEnhancementGrant() =>
-        CompanionEnhancementGrant.Of<YuPiJiaEnhancement>(1);
+    public IReadOnlyList<CompanionEnhancementGrant>
+        BuildCompanionEnhancementGrants() =>
+        [CompanionEnhancementGrant.Of<YuPiJiaEnhancement>(1)];
 
     // 声明格挡动态变量；最终基础值会由品阶公式在 RefreshValues 中覆盖。
     protected override IEnumerable<DynamicVar> CanonicalVars =>
-        [new BlockVar(8m, ValueProp.Move)];
+        [new BlockVar(2m, ValueProp.Move)];
 
     // 暂时复用模板防御牌卡图，后续可直接替换为玉皮蛊专属资源。
     public override CardAssetProfile AssetProfile => new(
-        PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildDefend.png"
+        PortraitPath: ModAssetPathResolver.ResolveCardPortrait(GetType().Name, ModAssetPathResolver.DefendTemplate)
     );
 
     // 玉皮蛊是以自身为目标的普通技能牌，构造完成后立即按当前品阶刷新格挡值。
@@ -50,7 +55,7 @@ public sealed class YuPiGu : AbstractGuBlockCard, ICompanionEnhancementSourceGuC
 
     private void RefreshValues()
     {
-        // 格挡成长公式：基础 6 点，每提升 1 品阶额外增加 2 点格挡。
-        DynamicVars.Block.BaseValue = 6m + GuRank * 2m;
+        // 玉皮蛊只保留最低限度的直接格挡（固定 2 点）。
+        DynamicVars.Block.BaseValue = 2m;
     }
 }

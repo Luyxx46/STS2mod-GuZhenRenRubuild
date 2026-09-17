@@ -1311,7 +1311,7 @@ public partial class RecipeCompendiumOverlay : CanvasLayer
         }
 
         // 带伴生牌的蛊被当合练材料消耗时会连带失去伴生牌，这里明确警示。
-        if (detail.CompanionType != null &&
+        if (detail.Companions.Count > 0 &&
             detail.UsedAsHeLianMaterial.Count > 0)
         {
             Label warning = CreateLabel(
@@ -1382,7 +1382,7 @@ public partial class RecipeCompendiumOverlay : CanvasLayer
     {
         ClearChildren(_companionContent);
 
-        if (detail.CompanionType is not { } companionType)
+        if (detail.Companions.Count == 0)
         {
             _companionContent.AddChild(
                 CreateLabel(T("detail.relatedEmpty"), 18, Muted)
@@ -1392,11 +1392,15 @@ public partial class RecipeCompendiumOverlay : CanvasLayer
 
         // 与合练配方页一致：伴生牌就是一个可点击的立体链接按钮，
         // 不再额外画贴图小块（用户要求统一为配方页的按钮观感）。
-        _companionContent.AddChild(CreateCardLink(
-            companionType,
-            detail.CompanionName ?? companionType.Name,
-            fontSize: 20
-        ));
+        // 一只蛊可以带多张不同伴生，逐张列出。
+        foreach (GuCompanionLink companion in detail.Companions)
+        {
+            _companionContent.AddChild(CreateCardLink(
+                companion.CardType,
+                companion.Name,
+                fontSize: 20
+            ));
+        }
     }
 
     /// <summary>

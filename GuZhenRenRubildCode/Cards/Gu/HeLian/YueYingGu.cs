@@ -2,6 +2,7 @@ using GuZhenRenRubild.Cards.Core.Recipes;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Gu;
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -30,7 +31,7 @@ public sealed class YueYingGu : AbstractHeLianGuCard
 
     // 暂时复用模板打击牌卡图，后续可替换为月影蛊专属资源。
     public override CardAssetProfile AssetProfile => new(
-        PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildStrike.png"
+        PortraitPath: ModAssetPathResolver.ResolveCardPortrait(GetType().Name, ModAssetPathResolver.StrikeTemplate)
     );
 
     public YueYingGu()

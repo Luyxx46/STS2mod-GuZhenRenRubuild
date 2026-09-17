@@ -1,3 +1,4 @@
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -82,6 +83,16 @@ public abstract class AbstractCompanionEnhancement : ModEnchantmentTemplate
     public override bool CanEnchant(CardModel card) => false;
 
     /// <summary>
+    /// 强化图标：把 <c>GuZhenRenRubild/images/enchantments/&lt;类名&gt;.png</c>
+    /// 放进资源目录即自动生效；缺失时返回 null（不覆盖，沿用引擎默认图标）。
+    /// </summary>
+    public override string? CustomIconPath =>
+        ModAssetPathResolver.ResolveOptional(
+            $"{Entry.ResPath}/images/enchantments/{GetType().Name}.png",
+            null
+        );
+
+    /// <summary>
     /// 本强化的叠加上限（层数上限）。挂载时会把层数限制在 <c>[1, MaxAmount]</c> 内；
     /// 默认不设上限，需要封顶的强化覆盖此属性。
     /// </summary>
@@ -90,35 +101,76 @@ public abstract class AbstractCompanionEnhancement : ModEnchantmentTemplate
     /// <summary>
     /// 本强化<b>每场战斗</b>可触发的次数；<c>0</c> 表示不限次数（活到战斗结束）。
     /// 由强化自身声明，同一强化全局一致。
+    ///
+    /// <para>
+    /// 授予方（父蛊）可以用 <c>CompanionEnhancementGrant.UsesPerCombat</c> 按转数覆写它
+    /// ——例如恒照在六/七/八转分别是 1/2/3 次。覆写值记录在
+    /// <see cref="GrantedUsesPerCombat"/> 上，实际生效值见 <see cref="EffectiveUsesPerCombat"/>。
+    /// </para>
     /// </summary>
     public virtual int UsesPerCombat => 0;
 
     /// <summary>
-    /// 本场战斗剩余可用次数。<see cref="UsesPerCombat"/> 为 0 时返回 <c>int.MaxValue</c>
+    /// 本次授予按转数覆写的每场可用次数；<c>null</c> 表示沿用 <see cref="UsesPerCombat"/>。
+    /// 由 <see cref="CompanionEnhancementService"/> 在挂载前写入。
+    /// </summary>
+    public int? GrantedUsesPerCombat { get; internal set; }
+
+    /// <summary>
+    /// 本次授予按转数给出的数值标量（例如「折光格挡额外 +X」里的 X）。
+    /// 层数（<see cref="EnchantmentModel.Amount"/>）只负责卡面显示与叠层，
+    /// 数值必须走这里，两条轴不能混用。由服务层在挂载前写入。
+    /// </summary>
+    public int GrantedMagnitude { get; internal set; }
+
+    /// <summary>实际生效的每场可用次数（0 = 不限）。</summary>
+    public int EffectiveUsesPerCombat => GrantedUsesPerCombat ?? UsesPerCombat;
+
+    /// <summary>
+    /// 本强化是否只在<b>子卡真正触发折光</b>的那次出牌才消耗可用次数。
+    /// 光道伴生强化全部覆盖成 true，避免「打出但没折光」白扣次数。
+    /// </summary>
+    protected virtual bool RequiresRefractionTrigger => false;
+
+    // 本次出牌里子卡是否已经通知过「折光触发」。
+    // 由 GuangDaoCardPlay 在折光段真正结算时登记，OnPlay 派发后立刻清掉。
+    private bool _refractionTriggered;
+
+    /// <summary>由卡面的折光段入口调用：登记「本次出牌真的折光了」。</summary>
+    public void MarkRefractionTriggered() => _refractionTriggered = true;
+
+    /// <summary>
+    /// 本场战斗剩余可用次数。<see cref="EffectiveUsesPerCombat"/> 为 0 时返回 <c>int.MaxValue</c>
     /// （不限次数）；尚未记账时返回声明的完整次数。
     /// </summary>
     public int RemainingUses
     {
         get
         {
-            if (UsesPerCombat <= 0)
+            int declared = EffectiveUsesPerCombat;
+            if (declared <= 0)
             {
                 return int.MaxValue;
             }
 
             CardModel? card = Card;
             return card == null
-                ? UsesPerCombat
-                : CompanionEnhancementUses.Peek(card, GetType()) ?? UsesPerCombat;
+                ? declared
+                : CompanionEnhancementUses.Peek(card, GetType()) ?? declared;
         }
     }
 
     /// <summary>
     /// 本次打出是否<b>真正触发</b>了本强化的效果 —— 只有返回 true 才消耗一次可用次数。
-    /// 默认「打出即触发」；带触发条件的强化覆写此方法（例如只在子卡确实获得了格挡、
-    /// 或满足某个战斗条件时返回 true）。
+    ///
+    /// <para>
+    /// 非虚：次数语义只有「打出即触发」与「折光才触发」两种，分别由
+    /// <see cref="RequiresRefractionTrigger"/> 与卡面的折光段入口决定，
+    /// 子类不再自行覆写，避免出现绕过次数记账的分支。
+    /// </para>
     /// </summary>
-    protected virtual bool IsEffectTriggered(CardModel card, CardPlay? cardPlay) => true;
+    private bool IsEffectTriggered() =>
+        !RequiresRefractionTrigger || _refractionTriggered;
 
     /// <summary>
     /// 效果真正触发时的附加行为（默认什么都不做）。
@@ -142,14 +194,21 @@ public abstract class AbstractCompanionEnhancement : ModEnchantmentTemplate
     )
     {
         CardModel? card = Card;
-        if (card == null || !IsEffectTriggered(card, cardPlay))
+
+        // 标记是一次性的：无论本次是否触发，派发结束后都要清掉，
+        // 否则上一次的折光会泄漏成下一次的「已触发」。
+        bool triggered = card != null && IsEffectTriggered();
+        _refractionTriggered = false;
+
+        if (!triggered || card == null)
         {
             return;
         }
 
         await OnEffectTriggered(choiceContext, cardPlay);
 
-        if (UsesPerCombat <= 0)
+        int declared = EffectiveUsesPerCombat;
+        if (declared <= 0)
         {
             return;
         }

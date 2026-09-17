@@ -1,0 +1,6 @@
+{
+  "GU_ZHEN_REN_RUBILD_POWER_JU_GUANG_POWER.title": "聚光",
+  "GU_ZHEN_REN_RUBILD_POWER_JU_GUANG_POWER.description": "你拥有 [blue]{Amount}[/blue] 次折光重复机会。当一张牌触发带伤害或格挡数值的折光时，若聚光大于 0，则在折光开始前消耗 1 层，并在正常结算后把该折光段完整再结算一次。一次折光事件最多消耗 1 层。\n纯功能折光（抽牌、回元气、获得聚光、强制折光、回收牌等）既不消耗聚光，也不会被聚光重复。",
+  "GU_ZHEN_REN_RUBILD_POWER_ZHE_GUANG_POWER.title": "折光",
+  "GU_ZHEN_REN_RUBILD_POWER_ZHE_GUANG_POWER.description": "记录本回合上一张主动打出的普通牌类型，并在类型交替或强制折光成立时判定折光。内部状态，不在状态栏显示。"
+}

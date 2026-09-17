@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using GuZhenRenRubild.Aperture;
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
+using GuZhenRenRubild.Cards.Core.GuangDao;
 using GuZhenRenRubild.Cards.Core.ImmortalEssence;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Cards.Core.ShaZhao;
@@ -212,6 +213,9 @@ public sealed class GuZhenRenRubildRelic
 
     // 本场第一次初始抽牌前发放系统牌：先发"杀招推演"（三转起），再发"仙元"（六转起）。
     // 两者都不占起手抽牌，且各自按运行层数去重（重连安全）。
+    //
+    // 同一时机另外静默挂载光道的折光真值 Power：折光需要"本回合上一张普通牌类型"
+    // 这样的整场共享状态，必须在任何一张牌被打出之前存在（方法内部幂等）。
     public override async Task BeforeHandDraw(
         Player player,
         PlayerChoiceContext choiceContext,
@@ -223,6 +227,7 @@ public sealed class GuZhenRenRubildRelic
             return;
         }
 
+        await GuangDaoSystem.EnsureZheGuangAsync(choiceContext, player);
         await ApertureSystem.HandleShaZhaoDerivationGrantAsync(player);
         await ApertureSystem.HandleXianYuanGrantAsync(player);
     }

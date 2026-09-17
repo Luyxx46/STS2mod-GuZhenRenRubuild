@@ -1,5 +1,6 @@
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -18,7 +19,7 @@ public sealed class TieJiaGu : AbstractGuBlockCard
 
     // 暂时复用模板防御牌卡图，后续可替换为铁甲蛊专属资源。
     public override CardAssetProfile AssetProfile => new(
-        PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildDefend.png"
+        PortraitPath: ModAssetPathResolver.ResolveCardPortrait(GetType().Name, ModAssetPathResolver.DefendTemplate)
     );
 
     public TieJiaGu()

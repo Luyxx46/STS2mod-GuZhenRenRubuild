@@ -1,5 +1,6 @@
 using GuZhenRenRubild.Cards.Core.Abstractions;
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -21,7 +22,7 @@ public sealed class XueShaGu : AbstractGuAttackCard
 
     // 暂时复用模板打击牌卡图，后续可替换为血煞蛊专属资源。
     public override CardAssetProfile AssetProfile => new(
-        PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildStrike.png"
+        PortraitPath: ModAssetPathResolver.ResolveCardPortrait(GetType().Name, ModAssetPathResolver.StrikeTemplate)
     );
 
     public XueShaGu()

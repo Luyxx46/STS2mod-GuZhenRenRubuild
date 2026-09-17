@@ -1,0 +1,6 @@
+{
+  "GU_ZHEN_REN_RUBILD_POWER_JU_GUANG_POWER.title": "Focus",
+  "GU_ZHEN_REN_RUBILD_POWER_JU_GUANG_POWER.description": "You have [blue]{Amount}[/blue] refraction repetition chance(s). When a card triggers a refraction segment that carries damage or Block, if Focus is above 0, 1 layer is spent before the refraction resolves and the whole segment then resolves one extra time after it. A single refraction event spends at most 1 layer.\nPure-function refractions (draw, Yuan Qi gain, Focus gain, forced refraction, card recovery) neither spend Focus nor get repeated by it.",
+  "GU_ZHEN_REN_RUBILD_POWER_ZHE_GUANG_POWER.title": "Refraction",
+  "GU_ZHEN_REN_RUBILD_POWER_ZHE_GUANG_POWER.description": "Tracks the last normal card actively played this turn and decides refraction when the type alternates or a forced refraction applies. Internal state, never shown in the status bar."
+}

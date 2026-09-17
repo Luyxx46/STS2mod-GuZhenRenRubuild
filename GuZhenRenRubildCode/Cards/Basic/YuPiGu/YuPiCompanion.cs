@@ -1,6 +1,7 @@
 using GuZhenRenRubild.Cards.Core.Companions;
 using GuZhenRenRubild.Cards.Core.Runtime;
 using GuZhenRenRubild.Characters;
+using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
@@ -20,7 +21,7 @@ public sealed class YuPiCompanion : AbstractCompanionCard
 
     // 暂时复用模板防御牌卡图，后续可替换为玉皮甲专属资源。
     public override CardAssetProfile AssetProfile => new(
-        PortraitPath: $"{Entry.ResPath}/images/cards/GuZhenRenRubildDefend.png"
+        PortraitPath: ModAssetPathResolver.ResolveCardPortrait(GetType().Name, ModAssetPathResolver.DefendTemplate)
     );
 
     protected override IEnumerable<DynamicVar> CanonicalVars =>

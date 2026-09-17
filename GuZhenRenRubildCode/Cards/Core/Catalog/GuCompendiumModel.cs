@@ -31,11 +31,16 @@ internal sealed record GuDetail(
     IReadOnlyList<GuAcquisitionKind> Acquisitions,
     int StarterCopyCount,
     IReadOnlyList<string> ExtraAcquisitionKeys,
-    string? CompanionName,
-    Type? CompanionType,
+    IReadOnlyList<GuCompanionLink> Companions,
     IReadOnlyList<GuRecipeLink> ProducedBy,
     IReadOnlyList<GuRecipeLink> UsedAsHeLianMaterial,
     IReadOnlyList<GuRecipeLink> UsedAsShaZhaoMaterial);
+
+/// <summary>
+/// 一只蛊带出的一张伴生牌：类型 + 显示名。
+/// 一只蛊可以带多种伴生（例如恒光仙蛊带恒光刃 + 恒光障），因此这里是列表项。
+/// </summary>
+internal sealed record GuCompanionLink(Type CardType, string Name);
 
 /// <summary>
 /// 一条与某张卡相关的配方。
@@ -192,13 +197,19 @@ internal static class GuCompendiumModel
     )
     {
         IGuCard gu = card;
-        string? companionName = null;
-        Type? companionType = null;
+        List<GuCompanionLink> companions = [];
 
         if (card is ICompanionSourceGuCard companionSource)
         {
-            companionType = companionSource.Companion.CardType;
-            companionName = TryGetCardName(companionType);
+            foreach (CompanionDefinition definition in
+                     companionSource.CompanionDefinitions)
+            {
+                companions.Add(new GuCompanionLink(
+                    definition.CardType,
+                    TryGetCardName(definition.CardType)
+                        ?? definition.CardType.Name
+                ));
+            }
         }
 
         return new GuDetail(
@@ -215,8 +226,7 @@ internal static class GuCompendiumModel
             GuAcquisitionResolver.Resolve(card),
             GuAcquisitionResolver.GetStarterCopyCount(cardType),
             GuAcquisitionOverrides.GetExtraAcquisitionKeys(cardType),
-            companionName,
-            companionType,
+            companions,
             FindRecipesProducing(cardType),
             FindRecipesUsingAsMaterial(cardType, isShaZhao: false),
             FindRecipesUsingAsMaterial(cardType, isShaZhao: true)
@@ -244,8 +254,7 @@ internal static class GuCompendiumModel
             Acquisitions: [],
             StarterCopyCount: 0,
             ExtraAcquisitionKeys: [],
-            CompanionName: null,
-            CompanionType: null,
+            Companions: [],
             ProducedBy: FindRecipesProducing(cardType),
             UsedAsHeLianMaterial: FindRecipesUsingAsMaterial(
                 cardType,

@@ -113,7 +113,9 @@ public static class CompanionEnhancementService
     public static AbstractCompanionEnhancement? Attach(
         CardModel card,
         AbstractCompanionEnhancement enhancement,
-        int amount
+        int amount,
+        int? magnitude = null,
+        int? usesPerCombat = null
     )
     {
         ArgumentNullException.ThrowIfNull(card);
@@ -153,7 +155,7 @@ public static class CompanionEnhancementService
         // 每场战斗的次数已耗尽：本场不再接受新的授予，避免同一场战斗内反复催动刷次数。
         Type enhancementType = enhancement.GetType();
         if (current == null &&
-            enhancement.UsesPerCombat > 0 &&
+            enhancement.EffectiveUsesPerCombat > 0 &&
             CompanionEnhancementUses.Peek(card, enhancementType) == 0)
         {
             Entry.Logger.Warn(
@@ -161,6 +163,18 @@ public static class CompanionEnhancementService
                 $"incoming={enhancement.Id} reason=UsesExhaustedThisCombat"
             );
             return null;
+        }
+
+        // 数值标量与每场次数先写进实例：ForceEnchant 之后框架会立刻做一次
+        // 数值重算，晚写会让首帧的卡面/结算读到旧值。
+        if (magnitude.HasValue)
+        {
+            enhancement.GrantedMagnitude = magnitude.Value;
+        }
+
+        if (usesPerCombat.HasValue)
+        {
+            enhancement.GrantedUsesPerCombat = usesPerCombat.Value;
         }
 
         // 层数统一夹进 [1, MaxAmount]：首次挂载与后续叠加共用同一约定，
@@ -187,12 +201,12 @@ public static class CompanionEnhancementService
         );
 
         // 首次授予时登记本场战斗的次数账本；合并到既有实例时保留其剩余次数（不回满）。
-        if (current == null && enhancement.UsesPerCombat > 0)
+        if (current == null && enhancement.EffectiveUsesPerCombat > 0)
         {
             CompanionEnhancementUses.Seed(
                 card,
                 enhancementType,
-                enhancement.UsesPerCombat
+                enhancement.EffectiveUsesPerCombat
             );
         }
 
@@ -202,7 +216,9 @@ public static class CompanionEnhancementService
     /// <summary>按类型挂载强化，内部会从 <see cref="ModelDb"/> 取规范实例的可变副本。</summary>
     public static AbstractCompanionEnhancement? Attach<T>(
         CardModel card,
-        int amount = 1
+        int amount = 1,
+        int? magnitude = null,
+        int? usesPerCombat = null
     ) where T : AbstractCompanionEnhancement
     {
         ArgumentNullException.ThrowIfNull(card);
@@ -213,7 +229,13 @@ public static class CompanionEnhancementService
             return null;
         }
 
-        return Attach(card, (T)ModelDb.Enchantment<T>().ToMutable(), amount);
+        return Attach(
+            card,
+            (T)ModelDb.Enchantment<T>().ToMutable(),
+            amount,
+            magnitude,
+            usesPerCombat
+        );
     }
 
     /// <summary>
@@ -319,7 +341,9 @@ public static class CompanionEnhancementService
 
     /// <summary>
     /// 按授予声明给「该蛊牌的全部伴生牌」挂载强化：多伴生来源
-    /// （<see cref="CompanionDefinition.Count"/> &gt; 1）的每一张都会独立拿到层数。
+    /// （<see cref="CompanionDefinition.Count"/> &gt; 1）的每一张都会独立拿到层数，
+    /// 并可用 <see cref="CompanionEnhancementGrant.CompanionTypes"/> 把不同强化
+    /// 分流到不同类型的伴生牌上。
     /// 伴生牌通过 <see cref="CompanionRelationshipService.GetCompanions"/> 解析为
     /// 永久牌组实例，因此战斗中催动同样落在持久侧，存档与联机天然同步。
     ///
@@ -356,6 +380,12 @@ public static class CompanionEnhancementService
         List<AbstractCompanionEnhancement> attached = [];
         foreach (CardModel companion in companions)
         {
+            // 声明了目标类型时只给匹配的伴生挂载（宝月光王蛊：宝月王衣与月王辉各挂一种强化）。
+            if (!grant.Targets(companion.GetType()))
+            {
+                continue;
+            }
+
             // 每张伴生牌挂独立的可变克隆：附魔实例绑定第一张卡后
             // （HasCard=true）不能再挂第二张，Attach 会直接拒绝；
             // 克隆体由 DeepCloneFields 清空卡绑定，可以安全落到下一张。
@@ -368,7 +398,13 @@ public static class CompanionEnhancementService
                 continue;
             }
 
-            if (Attach(target, enhancement, grant.Amount) is not { } applied)
+            if (Attach(
+                    target,
+                    enhancement,
+                    grant.Amount,
+                    grant.Magnitude,
+                    grant.UsesPerCombat
+                ) is not { } applied)
             {
                 continue;
             }
@@ -384,9 +420,9 @@ public static class CompanionEnhancementService
     ///
     /// <para>
     /// 蛊牌实现 <see cref="ICompanionEnhancementSourceGuCard"/> 并在
-    /// <see cref="ICompanionEnhancementSourceGuCard.BuildCompanionEnhancementGrant"/>
-    /// 里声明「给什么强化、本次几层」即可，无需写任何挂载代码；
-    /// 未实现接口的蛊牌零开销直接返回，声明返回 null（条件授予不触发）时同样无操作。
+    /// <see cref="ICompanionEnhancementSourceGuCard.BuildCompanionEnhancementGrants"/>
+    /// 里声明「给什么强化、本次几层、数值多大、本场几次」即可，无需写任何挂载代码；
+    /// 未实现接口的蛊牌零开销直接返回，声明返回空列表（条件授予不触发）时同样无操作。
     /// 返回本次实际挂载成功的强化列表（每张伴生牌一项）。
     /// </para>
     /// </summary>
@@ -401,14 +437,25 @@ public static class CompanionEnhancementService
             return [];
         }
 
-        CompanionEnhancementGrant? grant =
-            declaration.BuildCompanionEnhancementGrant();
-        if (grant == null)
+        IReadOnlyList<CompanionEnhancementGrant> grants =
+            declaration.BuildCompanionEnhancementGrants();
+        if (grants.Count == 0)
         {
             return [];
         }
 
-        return AttachToCompanionsOf(activatedGu, grant);
+        List<AbstractCompanionEnhancement> attached = [];
+        foreach (CompanionEnhancementGrant grant in grants)
+        {
+            if (grant == null)
+            {
+                continue;
+            }
+
+            attached.AddRange(AttachToCompanionsOf(activatedGu, grant));
+        }
+
+        return attached;
     }
 
     // ---------------------------------------------------------------------

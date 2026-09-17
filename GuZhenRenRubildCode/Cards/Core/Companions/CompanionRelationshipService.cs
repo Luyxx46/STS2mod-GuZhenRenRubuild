@@ -204,8 +204,9 @@ public static class CompanionRelationshipService
         if (replacement is ICompanionSourceGuCard newSource &&
             snapshot.Companions.Count > 0 &&
             snapshot.Companions.All(
-                companion =>
-                    companion.GetType() == newSource.Companion.CardType))
+                companion => newSource.CompanionDefinitions.Any(
+                    definition => definition.CardType == companion.GetType()
+                )))
         {
             // 伴生类型不变：把 PairId 转移给新来源，保留原伴生实例、升级和附魔。
             // 超出新增数量的多余伴生由后续 ReconcileDeck 按孤儿清理，缺失部分自动补建。
@@ -265,42 +266,49 @@ public static class CompanionRelationshipService
         {
             ICompanionSourceGuCard definition = (ICompanionSourceGuCard)source;
             int pairId = CompanionPairState.Get(source);
-            Type expectedType = definition.Companion.CardType;
-            int expectedCount = Math.Max(1, definition.Companion.Count);
 
-            for (int slot = 0; slot < expectedCount; slot++)
+            // 一只来源蛊可以带多种不同伴生（每种各自有数量）：
+            // 逐条定义按类型+数量配平，缺的补建、多的在下面按孤儿清理。
+            foreach (CompanionDefinition companionDefinition in
+                     definition.CompanionDefinitions)
             {
-                CardModel? companion = companions.FirstOrDefault(card =>
-                    !usedCompanions.Contains(card) &&
-                    card.GetType() == expectedType &&
-                    CompanionPairState.Get(card) == pairId
-                );
+                Type expectedType = companionDefinition.CardType;
+                int expectedCount = Math.Max(1, companionDefinition.Count);
 
-                // 迁移旧存档时优先复用未绑定/孤儿的正确类型伴生，保留升级与附魔。
-                companion ??= companions.FirstOrDefault(card =>
-                    !usedCompanions.Contains(card) &&
-                    card.GetType() == expectedType &&
-                    (CompanionPairState.Get(card) <= 0 ||
-                     !claimedSourcePairs.Contains(CompanionPairState.Get(card)))
-                );
-
-                if (companion == null)
+                for (int slot = 0; slot < expectedCount; slot++)
                 {
-                    companion = CreateCompanion(player, source, expectedType, pairId);
-                    deckChanged = true;
-                    companions = companions.Append(companion).ToArray();
-                    Entry.Logger.Info(
-                        $"[Companion/Reconcile] source={source.Id} pair={pairId} " +
-                        $"slot={slot + 1}/{expectedCount} " +
-                        $"action=CreateCompanion companion={companion.Id}"
+                    CardModel? companion = companions.FirstOrDefault(card =>
+                        !usedCompanions.Contains(card) &&
+                        card.GetType() == expectedType &&
+                        CompanionPairState.Get(card) == pairId
                     );
-                }
-                else
-                {
-                    CompanionPairState.Set(companion, pairId);
-                }
 
-                usedCompanions.Add(companion);
+                    // 迁移旧存档时优先复用未绑定/孤儿的正确类型伴生，保留升级与附魔。
+                    companion ??= companions.FirstOrDefault(card =>
+                        !usedCompanions.Contains(card) &&
+                        card.GetType() == expectedType &&
+                        (CompanionPairState.Get(card) <= 0 ||
+                         !claimedSourcePairs.Contains(CompanionPairState.Get(card)))
+                    );
+
+                    if (companion == null)
+                    {
+                        companion = CreateCompanion(player, source, expectedType, pairId);
+                        deckChanged = true;
+                        companions = companions.Append(companion).ToArray();
+                        Entry.Logger.Info(
+                            $"[Companion/Reconcile] source={source.Id} pair={pairId} " +
+                            $"slot={slot + 1}/{expectedCount} " +
+                            $"action=CreateCompanion companion={companion.Id}"
+                        );
+                    }
+                    else
+                    {
+                        CompanionPairState.Set(companion, pairId);
+                    }
+
+                    usedCompanions.Add(companion);
+                }
             }
         }
 
