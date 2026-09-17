@@ -1808,7 +1808,7 @@ public partial class RecipeCompendiumOverlay : CanvasLayer
             Muted
         ));
         _recipeRows.AddChild(BuildPreviewRow("玉皮蛊", "一转 · 角色初始牌组 · 卡牌奖励"));
-        _recipeRows.AddChild(BuildPreviewRow("玄铁蛊", "只能通过合练获得"));
+        _recipeRows.AddChild(BuildPreviewRow("聚光蛊", "只能通过合练获得"));
 
         _guTab.ButtonPressed = true;
         _cardTab.ButtonPressed = false;

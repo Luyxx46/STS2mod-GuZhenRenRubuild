@@ -9,7 +9,7 @@ using STS2RitsuLib.Scaffolding.Content;
 
 namespace GuZhenRenRubild.Cards.Gu;
 
-// 血煞蛊：一转即可入手的攻击型蛊牌，也是月影蛊的合练材料之一。
+// 血煞蛊：一转即可入手的攻击型蛊牌，纯奖励池蛊（不参与任何合练配方）。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 public sealed class XueShaGu : AbstractGuAttackCard
 {

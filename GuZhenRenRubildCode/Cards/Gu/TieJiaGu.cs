@@ -9,7 +9,7 @@ using STS2RitsuLib.Scaffolding.Content;
 
 namespace GuZhenRenRubild.Cards.Gu;
 
-// 铁甲蛊：一转即可入手的防御型蛊牌，也是玄铁蛊的合练材料之一。
+// 铁甲蛊：一转即可入手的防御型蛊牌，纯奖励池蛊（不参与任何合练配方）。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 public sealed class TieJiaGu : AbstractGuBlockCard
 {
