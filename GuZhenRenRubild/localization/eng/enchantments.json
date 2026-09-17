@@ -1,10 +1,4 @@
 {
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_HUA_ENHANCEMENT.title": "Moon Lustre",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_HUA_ENHANCEMENT.description": "Enhancement stacked on the companion card Moonblade each time its parent Gu, Moonlight Gu, is activated: each stack adds 2 to Moonblade's refraction damage, up to 3 stacks. Only an outplay that actually refracts spends a use, 3 per combat; once exhausted the enhancement disappears and the next combat requires Moonlight Gu to be activated again.",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YUE_HUA_ENHANCEMENT.extraCardText": "Deals [blue]2[/blue] more refraction damage per stack.",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.title": "Jade Skin Armor Hardening",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.description": "Enhancement stacked on the companion card Jade Skin Armor each time its parent Gu, Jade Skin Gu, is activated: each stack makes it gain 3 more Block, up to 3 stacks. Jade Skin Armor has no refraction segment, so this buff is never multiplied by Focus. It triggers 3 times per combat and disappears once those uses run out; the next combat requires Jade Skin Gu to be activated again.",
-  "GU_ZHEN_REN_RUBILD_ENCHANTMENT_YU_PI_JIA_ENHANCEMENT.extraCardText": "Gains [blue]3[/blue] more Block per stack.",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_HUI_YING_ENHANCEMENT.title": "Radiance",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_HUI_YING_ENHANCEMENT.description": "Enhancement stacked on both Radiant Arrows each time their parent Gu, Radiant Gu, is activated: each stack adds 1 refraction damage, up to 2 stacks. Each copy triggers at most twice per combat; the bonus is repeated along with the refraction segment when Focus repeats it.",
   "GU_ZHEN_REN_RUBILD_ENCHANTMENT_HUI_YING_ENHANCEMENT.extraCardText": "Deals [blue]1[/blue] more refraction damage per stack.",

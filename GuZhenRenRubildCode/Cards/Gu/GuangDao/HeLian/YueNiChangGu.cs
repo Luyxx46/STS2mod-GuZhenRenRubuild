@@ -16,7 +16,7 @@ namespace GuZhenRenRubild.Cards.Gu.GuangDao.HeLian;
 ///
 /// <para>
 /// 合练：月光蛊 + 玉皮蛊，结果转数 = 材料最高转数 + 1 = 2。
-/// 月刃的进攻动作在这里换成护体：两只 <see cref="YueNi"/> 承接防御动作。
+/// 合练前的两张低转材料蛊离场，改由两只 <see cref="YueNi"/> 承接防御动作。
 /// </para>
 ///
 /// <para>
