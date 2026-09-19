@@ -1,4 +1,6 @@
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Cards.Core.Companions;
+using GuZhenRenRubild.Cards.Core.Companions.Enhancements;
 using GuZhenRenRubild.Characters;
 using GuZhenRenRubild.Cards.Core.Catalog;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -10,13 +12,24 @@ using STS2RitsuLib.Scaffolding.Content;
 namespace GuZhenRenRubild.Cards.Basic.YuPiGu;
 
 // 将「玉皮蛊」注册进角色卡池，并作为 1 张初始蛊牌加入角色初始牌组。
-// 它没有伴生牌：自身只是一转窗口的低格挡技能蛊，价值全在篝火被合练成月霓裳蛊。
+// 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出 1 张玉皮甲。
+// 与伴生牌 YuPiCompanion 同处一个目录：一只初始蛊连同它的伴生牌自成一组。
+// 作为「父蛊」，它每次催动还会按声明给子卡（玉皮甲）叠一层 YuPiJiaEnhancement。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
 [RegisterCharacterStarterCard(typeof(GuYueFangYuan), 1)]
-public sealed class YuPiGu : AbstractGuBlockCard
+public sealed class YuPiGu : AbstractGuBlockCard, ICompanionEnhancementSourceGuCard
 {
+    // 目录名与类名同为 YuPiGu，命名空间因此与本类同名，跨目录引用必须走 global:: 全限定名。
+    public CompanionDefinition Companion =>
+        new(typeof(global::GuZhenRenRubild.Cards.Basic.YuPiGu.YuPiCompanion));
+
     // 玉皮蛊只有一转窗口：它是月系合练的通用防御材料，成长交给月霓裳一系。
     public override int MaxGuRank => 1;
+
+    // 父蛊声明：每次催动给子卡叠 1 层玉皮甲强化（层数上限由强化自身的 MaxAmount 封顶）。
+    public IReadOnlyList<CompanionEnhancementGrant>
+        BuildCompanionEnhancementGrants() =>
+        [CompanionEnhancementGrant.Of<YuPiJiaEnhancement>(1)];
 
     // 声明格挡动态变量；最终基础值会由品阶公式在 RefreshValues 中覆盖。
     protected override IEnumerable<DynamicVar> CanonicalVars =>
@@ -42,8 +55,7 @@ public sealed class YuPiGu : AbstractGuBlockCard
 
     private void RefreshValues()
     {
-        // 玉皮蛊只保留最低限度的直接格挡（固定 2 点）：它的价值是与月光蛊的合练配方，
-        // 以及作为月系起点牌进入初始牌组。
+        // 玉皮蛊只保留最低限度的直接格挡（固定 2 点）。
         DynamicVars.Block.BaseValue = 2m;
     }
 }
