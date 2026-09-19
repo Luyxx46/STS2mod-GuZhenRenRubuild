@@ -12,7 +12,8 @@ using STS2RitsuLib.Scaffolding.Content;
 namespace GuZhenRenRubild.Cards.Basic.YueGuangGu;
 
 // 将「月光蛊」注册进角色卡池，并作为 2 张初始蛊牌加入角色初始牌组。
-// 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出对应数量的月刃。
+// 它同时是伴生来源：进入牌组后由 CompanionRelationshipService 自动带出对应数量的月刃
+// （每张月光蛊带出 3 张，初始牌组的 2 张 → 月刃 ×6）。
 // 与伴生牌 YueGuangCompanion 同处一个目录：一只初始蛊连同它的伴生牌自成一组。
 // 作为「父蛊」，它每次催动还会按声明给子卡（月刃）叠一层 YueHuaEnhancement。
 [RegisterCard(typeof(GuZhenRenRubildGuCardPool))]
@@ -20,8 +21,9 @@ namespace GuZhenRenRubild.Cards.Basic.YueGuangGu;
 public sealed class YueGuangGu : AbstractGuAttackCard, ICompanionEnhancementSourceGuCard
 {
     // 目录名与类名同为 YueGuangGu，命名空间因此与本类同名，跨目录引用必须走 global:: 全限定名。
+    // 数量取自设计案工作簿「蛊虫设计」的伴生结构列（月刃×3）。
     public CompanionDefinition Companion =>
-        new(typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangCompanion));
+        new(typeof(global::GuZhenRenRubild.Cards.Basic.YueGuangGu.YueGuangCompanion), 3);
 
     // 月系起点只有一转窗口：它不靠升炼成长，而是在篝火被合练成月霓裳蛊。
     public override int MaxGuRank => 1;
