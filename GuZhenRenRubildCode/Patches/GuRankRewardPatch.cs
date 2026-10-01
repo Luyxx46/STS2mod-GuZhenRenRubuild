@@ -55,11 +55,6 @@ internal static class GuRankRewardPatch
     private static void PopulatePostfix(CardReward __instance)
     {
         Player player = __instance.Player;
-        Rng stream = RitsuLibFramework.GetModPlayerRng(
-            player,
-            Entry.ModId,
-            RngStream
-        );
 
         foreach (CardModel card in __instance.Cards)
         {
@@ -69,33 +64,58 @@ internal static class GuRankRewardPatch
                 continue;
             }
 
-            // 仙蛊唯一性封顶：整局中已有同名仙蛊时，本次赋阶上限压到五转，
-            // 使奖励永远不会直接产出第二张同名仙蛊（拿到手后再升转也会被升炼仲裁拦下）。
-            int maximumRank = GuXianGuRules.HasSameXianGu(
-                player.RunState,
-                card
-            )
-                ? Math.Min(
-                    gu.MaxGuRank,
-                    GuXianGuRules.XianGuRank - 1
-                )
-                : gu.MaxGuRank;
+            AssignInitialRank(gu, player, RngStream);
+        }
+    }
 
-            // 每张真正需要初始化的蛊牌只推进主随机流一次，再用得到的种子建立独立随机器。
-            // 这样奖励界面重建或 Populate 被重复调用时，已经初始化的卡不会再次消耗随机数，结果仍保持确定性。
-            // 封顶只改变采样区间，不额外消耗随机数，随机流的推进次数保持不变。
-            gu.TryAssignInitialRank(
-                new Rng(stream.NextUnsignedInt()),
+    /// <summary>
+    /// 为一张尚未获得初始品阶的蛊牌执行一次确定性随机赋阶，并登记仙蛊楼层。
+    ///
+    /// 供两条入口复用：卡牌奖励（<c>CardReward.Populate</c>）与原版变形结果
+    /// （<see cref="GuTransformRankPatch"/>，裁决 D-04）。
+    /// <paramref name="rngStream"/> 区分调用来源，保证各入口的随机流互不干扰；
+    /// 每张真正需要初始化的蛊牌只推进对应随机流一次（已初始化的卡不消耗随机数，
+    /// 界面重建/重复调用仍保持确定性）。
+    /// </summary>
+    internal static void AssignInitialRank(
+        AbstractGuCard gu,
+        Player player,
+        string rngStream
+    )
+    {
+        ArgumentNullException.ThrowIfNull(gu);
+        ArgumentNullException.ThrowIfNull(player);
+
+        // 仙蛊唯一性封顶：整局中已有同名仙蛊时，本次赋阶上限压到五转，
+        // 使该入口永远不会直接产出第二张同名仙蛊（拿到手后再升转也会被升炼仲裁拦下）。
+        int maximumRank = GuXianGuRules.HasSameXianGu(
+            player.RunState,
+            gu
+        )
+            ? Math.Min(
+                gu.MaxGuRank,
+                GuXianGuRules.XianGuRank - 1
+            )
+            : gu.MaxGuRank;
+
+        if (!gu.TryAssignInitialRank(
+                new Rng(
+                    RitsuLibFramework
+                        .GetModPlayerRng(player, Entry.ModId, rngStream)
+                        .NextUnsignedInt()
+                ),
                 player.RunState.TotalFloor,
                 maximumRank
-            );
-
-            // 六转及以上的奖励牌一诞生就是仙蛊，必须立刻登记首次成仙楼层；
-            // 否则它会被当成"未登记的旧档仙蛊"，反过来把更早的合法仙蛊压掉。
-            GuXianGuRules.RegisterXianGuClaim(
-                gu,
-                player.RunState.TotalFloor
-            );
+            ))
+        {
+            return;
         }
+
+        // 六转及以上的牌一诞生就是仙蛊，必须立刻登记首次成仙楼层；
+        // 否则它会被当成"未登记的旧档仙蛊"，反过来把更早的合法仙蛊压掉。
+        GuXianGuRules.RegisterXianGuClaim(
+            gu,
+            player.RunState.TotalFloor
+        );
     }
 }

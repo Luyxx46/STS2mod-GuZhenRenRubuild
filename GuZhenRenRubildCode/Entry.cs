@@ -55,6 +55,17 @@ public partial class Entry
         // 仙元不足提示补丁只读 IGuCard.GuRank 与仙元余额、改写原版一句人物台词，
         // 不依赖任何已启动组件的状态，也没有硬性先后要求；放在这里只是让"提示层"组件相邻。
         new(nameof(XianYuanWarningPatch), XianYuanWarningPatch.Initialize, XianYuanWarningPatch.Uninitialize),
+        // —— 原版适配裁决落地（Docs/原版适配裁决表_蛊手牌系统.xlsx，已裁决项）——
+        // D-01：原版/事件升级作用于蛊牌 ⇒ 升 1 转（资格在 AbstractGuCard.MaxUpgradeLevel）。
+        // 与 GuRankUpPreviewPatch 同挂 CardModel.UpgradeInternal，靠 Harmony 优先级分工；
+        // 初始化只挂补丁不读状态，运行期读取的组件（牌堆/规则层）都已就绪。
+        new(nameof(GuVanillaUpgradePatch), GuVanillaUpgradePatch.Initialize, GuVanillaUpgradePatch.Uninitialize),
+        // D-05/D-06：拒绝原版附魔挂到蛊牌（伴生牌/普通牌不变）。
+        new(nameof(GuEnchantGuardPatch), GuEnchantGuardPatch.Initialize, GuEnchantGuardPatch.Uninitialize),
+        // D-09：原版苦难只允许命中激活区（蛊手牌）里的蛊牌，休眠堆免疫。
+        new(nameof(GuAfflictionScopePatch), GuAfflictionScopePatch.Initialize, GuAfflictionScopePatch.Uninitialize),
+        // D-04：原版变形产出的蛊牌补赋初始转数（含仙蛊封顶与成仙登记）。
+        new(nameof(GuTransformRankPatch), GuTransformRankPatch.Initialize, GuTransformRankPatch.Uninitialize),
         // 配方大全只读配方注册表，卡牌扫描在 RegisterContentOnce 中已完成，放在最后即可。
         new(nameof(RecipeCompendiumSystem), RecipeCompendiumSystem.Initialize, RecipeCompendiumSystem.Uninitialize),
     ];

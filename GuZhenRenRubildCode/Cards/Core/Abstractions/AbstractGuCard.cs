@@ -69,8 +69,13 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     // 蛊牌不通过战斗中的普通随机生成机制产生，只由角色卡池、奖励等受控入口创建。
     public override bool CanBeGeneratedInCombat => false;
 
-    // 蛊牌不参与普通 Upgrade；转数只通过独立“升炼”规则提升。
-    public override int MaxUpgradeLevel => 0;
+    // 原生升级资格（裁决 D-01）：事件与原版升级效果可以把"非仙蛊且未到上限"的蛊牌升 1 转。
+    // 实际升转由 GuVanillaUpgradePatch 拦截 UpgradeInternal 完成（映射为 TryIncreaseGuRank），
+    // CurrentUpgradeLevel 保持 0（IsUpgregated 恒 false，降级类效果永不选中蛊牌）。
+    // 仙蛊（六转及以上）与已到 MaxGuRank 的蛊牌返回 0："全部升级"类效果（如 Apotheosis）
+    // 靠 IsUpgradable 过滤自动排除它们。篝火「升炼」不受本属性影响（读 GuRankUpRules）。
+    public override int MaxUpgradeLevel =>
+        GuRank < MaxGuRank && GuRank < GuXianGuRules.XianGuRank ? 1 : 0;
 
     // 卡牌费用位置显示元气图标，而不是角色的普通能量图标。
     public override string? CustomEnergyIconPath => YuanQiSystem.LargeIconPath;
