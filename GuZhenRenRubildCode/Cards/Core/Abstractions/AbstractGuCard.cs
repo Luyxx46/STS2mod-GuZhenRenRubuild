@@ -300,7 +300,7 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     ///
     /// 该入口位于公共蛊牌父类，因此声明配方的常规蛊牌也可以作为合练结果，
     /// 而不要求继承专用的合练牌父类。结果转数由 <see cref="CalculateHeLianResultRank"/>
-    /// 决定；默认取最高转数，特定配方可改为固定转数等策略。
+    /// 决定；全局规则是「材料最高转数 + 1」，九转终点这类配方才重写为固定转数。
     /// </summary>
     internal void InitializeFromHeLian(IReadOnlyList<CardModel> materials)
     {
@@ -319,17 +319,21 @@ public abstract class AbstractGuCard : ModCardTemplate, IGuCard
     }
 
     /// <summary>
-    /// 计算合练结果转数。默认取全部材料中的最高转数。
+    /// 计算合练结果转数。全局规则：结果转数 = 材料最高转数 + 1，
+    /// 再夹进本蛊自身的转数窗口（低于一转按一转，超出 MaxGuRank 按上限封顶）。
+    /// 九转终点这类固定转数配方（如光蛊）才重写本方法。
     /// </summary>
     protected virtual int CalculateHeLianResultRank(
         IReadOnlyList<CardModel> materials
     )
     {
-        return materials
+        int highest = materials
             .OfType<IGuCard>()
             .Select(gu => Math.Max(MinimumGuRank, gu.GuRank))
             .DefaultIfEmpty(MinimumGuRank)
             .Max();
+
+        return Math.Clamp(highest + 1, MinimumGuRank, MaxGuRank);
     }
 
     /// <summary>

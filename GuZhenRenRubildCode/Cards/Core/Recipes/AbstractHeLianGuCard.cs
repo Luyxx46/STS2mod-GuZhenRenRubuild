@@ -9,7 +9,7 @@ namespace GuZhenRenRubild.Cards.Core.Recipes;
 /// 公共规则：
 /// 1. 具体合练蛊各自声明 [RegisterCard] 进入蛊牌主奖励池（与本模组其他蛊牌一致）；
 /// 2. 是否进入普通卡牌奖励由具体卡牌显式实现 <see cref="IHeLianCardRewardEligible"/> 决定；
-/// 3. 合练生成时默认取材料最高转数，具体结果牌可重写计算策略；
+/// 3. 合练生成时按全局规则取「材料最高转数 + 1」，九转终点类结果牌可重写为固定转数；
 /// 4. 费用固定为 2 点元气，且不允许被战斗内随机生成。
 /// </summary>
 public abstract class AbstractHeLianGuCard : AbstractGuCard
