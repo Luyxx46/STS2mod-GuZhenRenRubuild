@@ -12,7 +12,7 @@
   "dependencies": [
     {
       "id": "STS2-RitsuLib",
-      "version": "0.5.18"
+      "version": "0.6.5"
     },
     {
       "id": "MultiEnchantmentMod",

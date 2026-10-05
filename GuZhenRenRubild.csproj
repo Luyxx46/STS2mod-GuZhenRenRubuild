@@ -21,7 +21,7 @@
         <ModPckPath>$(ModOutputDir)$(MSBuildProjectName).pck</ModPckPath>
         <!-- 本机测试构建时，RitsuLib 的包与构建逻辑会使用此目录，把依赖部署到游戏的 mods/STS2-RitsuLib 目录。 -->
         <RitsuLibDeployDir Condition="'$(RitsuLibDeployDir)' == ''">$(Sts2Dir)\mods\STS2-RitsuLib</RitsuLibDeployDir>
-        <RitsuLibVersion Condition="'$(RitsuLibVersion)' == ''">0.5.18</RitsuLibVersion>
+        <RitsuLibVersion Condition="'$(RitsuLibVersion)' == ''">0.6.5</RitsuLibVersion>
         <!-- 前置 MultiEnchantmentMod：强化槽（旁路额外附魔槽）由它提供，用户需把它安装到游戏的
              mods/MultiEnchantmentMod/。这里只引用其 DLL 做类型解析，不随本模组分发。 -->
         <MultiEnchantmentModPath Condition="'$(MultiEnchantmentModPath)' == ''">$(Sts2Dir)\mods\MultiEnchantmentMod\MultiEnchantmentMod.dll</MultiEnchantmentModPath>
