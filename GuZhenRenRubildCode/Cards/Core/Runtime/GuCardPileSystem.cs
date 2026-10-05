@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using GuZhenRenRubild.Cards.Core.Abstractions;
+using GuZhenRenRubild.Characters;
 using Godot;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -62,6 +63,13 @@ public static class GuCardPileSystem
     /// </summary>
     public static PileType SealedPileType { get; private set; }
 
+    // 裁决 D-15：四个蛊牌堆只对古月方源可见——原版角色的战斗界面不再出现
+    // 空的蛊牌堆按钮与额外手牌区（牌堆仍在 AllPiles 注册，仅隐藏表现层，判定面不变）。
+    // Player 在界面初始化期间可能为 null，此时按不可见处理，初始化完成后 RitsuLib 会再次求值。
+    private static bool IsVisibleForGuYueFangYuan(
+        ModCardPileVisibilityContext context
+    ) => context.Player?.Character is GuYueFangYuan;
+
     // 向 RitsuLib 注册四个仅在战斗期间存在的蛊牌牌堆及其界面表现。
     public static void Initialize()
     {
@@ -82,6 +90,7 @@ public static class GuCardPileSystem
                     Scope = ModCardPileScope.CombatOnly,
                     Style = ModCardPileUiStyle.ExtraHand,
                     CardShouldBeVisible = true,
+                    VisibleWhen = IsVisibleForGuYueFangYuan,
                     ExtraHand = new ModCardPileExtraHandSpec
                     {
                         AllowCardPlay = true,
@@ -103,6 +112,7 @@ public static class GuCardPileSystem
                         Vector2.Zero
                     ),
                     CardShouldBeVisible = true,
+                    VisibleWhen = IsVisibleForGuYueFangYuan,
                 }
             ).PileType;
 
@@ -119,6 +129,7 @@ public static class GuCardPileSystem
                         new Vector2(-200f, 0f)
                     ),
                     CardShouldBeVisible = true,
+                    VisibleWhen = IsVisibleForGuYueFangYuan,
                 }
             ).PileType;
 
@@ -140,6 +151,7 @@ public static class GuCardPileSystem
                     HoverTipPlacement =
                         ModCardPileHoverTipPlacement.AboveButtonCentered,
                     CardShouldBeVisible = true,
+                    VisibleWhen = IsVisibleForGuYueFangYuan,
                 }
             ).PileType;
 
