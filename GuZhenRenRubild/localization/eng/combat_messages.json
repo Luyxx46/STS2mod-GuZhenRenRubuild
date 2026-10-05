@@ -1,3 +1,5 @@
 {
-  "GU_ZHEN_REN_RUBILD_NO_IMMORTAL_ESSENCE": "Not enough Immortal Essence to channel Gu of rank 6 or higher."
+  "GU_ZHEN_REN_RUBILD_NO_IMMORTAL_ESSENCE": "Not enough Immortal Essence to channel Gu of rank 6 or higher.",
+  "GU_ZHEN_REN_RUBILD_GU_SMOG_BLOCKED": "The smog chokes this Gu — it cannot be stirred this turn.",
+  "GU_ZHEN_REN_RUBILD_GU_RINGING_BLOCKED": "Dazed! This Gu cannot be stirred yet — play another card first."
 }

@@ -69,6 +69,9 @@ public partial class Entry
         // D-10：永久入组兜底补抽初始转数。挂点与仙蛊仲裁相同（Hook.ShouldAddToDeck），
         // 但运行期优先级更靠后，只给仲裁放行的牌赋阶；初始化只挂补丁不读状态。
         new(nameof(GuDeckEntryRankPatch), GuDeckEntryRankPatch.Initialize, GuDeckEntryRankPatch.Uninitialize),
+        // D-16：烟雾/昏眩之力阻断蛊牌时的人物气泡提示（改写 combat_messages 台词，
+        // 参照 XianYuanWarningPatch；与它分别接管 BlockedByHook 与 BlockedByCardLogic，互不冲突）。
+        new(nameof(GuAfflictionWarningPatch), GuAfflictionWarningPatch.Initialize, GuAfflictionWarningPatch.Uninitialize),
         // 配方大全只读配方注册表，卡牌扫描在 RegisterContentOnce 中已完成，放在最后即可。
         new(nameof(RecipeCompendiumSystem), RecipeCompendiumSystem.Initialize, RecipeCompendiumSystem.Uninitialize),
     ];

@@ -1,3 +1,5 @@
 {
-  "GU_ZHEN_REN_RUBILD_NO_IMMORTAL_ESSENCE": "仙元不足，无法催动六转以上的蛊。"
+  "GU_ZHEN_REN_RUBILD_NO_IMMORTAL_ESSENCE": "仙元不足，无法催动六转以上的蛊。",
+  "GU_ZHEN_REN_RUBILD_GU_SMOG_BLOCKED": "烟雾熏扰，此蛊本回合无法催动。",
+  "GU_ZHEN_REN_RUBILD_GU_RINGING_BLOCKED": "昏眩缠身，此蛊暂时无法催动——先打出其他牌试试。"
 }
