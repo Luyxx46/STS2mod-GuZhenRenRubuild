@@ -72,6 +72,8 @@ public partial class Entry
         // D-16：烟雾/昏眩之力阻断蛊牌时的人物气泡提示（改写 combat_messages 台词，
         // 参照 XianYuanWarningPatch；与它分别接管 BlockedByHook 与 BlockedByCardLogic，互不冲突）。
         new(nameof(GuAfflictionWarningPatch), GuAfflictionWarningPatch.Initialize, GuAfflictionWarningPatch.Uninitialize),
+        // D-14：玩家死亡时把 4 个蛊牌堆并入原版死亡清理（HandlePlayerDeath 只清五个原生堆）。
+        new(nameof(GuDeathCleanupPatch), GuDeathCleanupPatch.Initialize, GuDeathCleanupPatch.Uninitialize),
         // 配方大全只读配方注册表，卡牌扫描在 RegisterContentOnce 中已完成，放在最后即可。
         new(nameof(RecipeCompendiumSystem), RecipeCompendiumSystem.Initialize, RecipeCompendiumSystem.Uninitialize),
     ];
