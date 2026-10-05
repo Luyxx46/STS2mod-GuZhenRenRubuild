@@ -38,6 +38,14 @@ namespace GuZhenRenRubild.Patches;
 /// 例外路径：原版变形走 <c>AddInternal</c> 不经过本挂点，由
 /// <see cref="GuTransformRankPatch"/>（裁决 D-04）单独补赋。
 /// </para>
+///
+/// <para>
+/// 裁决 D-13（Reflections 克隆）：普通蛊牌可克隆、副本继承母本转数——本补丁在
+/// 入组时调 <c>RefreshRankDerivedState</c> 把克隆复制的本地转数字段回填进
+/// SavedAttachedState，防止存档重进后掉回一转；仙蛊副本则由
+/// <see cref="XianGuUniquenessPatch"/> 的入组仲裁拒绝（= 仙蛊不可克隆），
+/// 副本实例与升炼预览克隆同性质（RunState 临时对象，不在牌组即无影响）。
+/// </para>
 /// </summary>
 internal static class GuDeckEntryRankPatch
 {
@@ -89,8 +97,18 @@ internal static class GuDeckEntryRankPatch
     )
     {
         if (!__result ||
-            card is not AbstractGuCard gu ||
-            !gu.NeedsInitialRankAssignment ||
+            card is not AbstractGuCard gu)
+        {
+            return;
+        }
+
+        // 裁决 D-13（Reflections 克隆，普通蛊可克隆）：副本继承母本转数靠的是克隆
+        // 复制的本地字段，SavedAttachedState 没有条目——本地字段不随存档持久化，
+        // 不回填的话副本在存档重进后会掉回一转。RefreshRankDerivedState 把继承值
+        // 写进持久化状态；对已持久化的牌是幂等 no-op（仅重算一次派生数值）。
+        gu.RefreshRankDerivedState();
+
+        if (!gu.NeedsInitialRankAssignment ||
             card.Owner is not { } player)
         {
             return;
